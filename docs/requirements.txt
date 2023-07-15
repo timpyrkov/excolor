@@ -1,0 +1,6 @@
+ipykernel
+nbsphinx
+IPython
+scikit-learn
+pythonperlin
+requests
