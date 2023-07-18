@@ -1,6 +1,8 @@
 ipykernel
 nbsphinx
 IPython
+matplotlib
+seaborn
 scikit-learn
 pythonperlin
 requests
