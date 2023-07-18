@@ -102,8 +102,25 @@ def array_to_image(x):
     
 
 def smoother(x, window):
+    """
+    Converts numpy array to image
+
+    Parameters
+    ----------
+    x : ndarray
+        1D array of data
+    window : int
+        Window size
+
+    Returns
+    -------
+    s : ndarray
+        1D array of smoothed data
+
+    """
     w = np.hanning(max(1,window))
-    return np.convolve(x, w/np.sum(w), mode="same")
+    s = np.convolve(x, w/np.sum(w), mode="same")
+    return s
 
 
 def find_peaks(data):

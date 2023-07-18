@@ -1,3 +1,8 @@
+[![Python Versions](https://img.shields.io/pypi/pyversions/excolor?style=plastic)](https://pypi.org/project/excolor/)
+[![PyPI](https://img.shields.io/pypi/v/excolor?style=plastic)](https://pypi.org/project/excolor/)
+[![License](https://img.shields.io/pypi/l/excolor?style=plastic)](https://opensource.org/licenses/MIT)
+[![Documentation Status](https://readthedocs.org/projects/excolor/badge/?version=latest)](https://excolor.readthedocs.io/en/latest/?badge=latest)
+
 # excolors
 
 ## Extexnded color utilities for python
@@ -12,6 +17,8 @@ pip install excolor
 # Extra colormaps
 
 ```
+import excolor
+
 cmap = plt.get_cmap("gruvbox")
 cmap
 ```
@@ -22,7 +29,7 @@ cmap
 
 - Hue and saturation cannot colorize black-and-white image. They only change pixels where levels of red, gree, blue are not the same. 
 
-- Colorize() function takes a greyscale or b&w image and adds colors to darg and light areas.
+- Colorize() function takes a greyscale or b&w image and adds colors to dark and light areas.
 
 
 ```
@@ -32,14 +39,14 @@ img = excolor.load_image(fname)
 
 plt.figure(figsize=(2,2), facecolor="#00000000")
 plt.imshow(img)
-plt.gca().set_axis_off()
+plt.axis("off")
 plt.show()
 
 img = excolor.colorize(fname, "yellow", "green")
 
 plt.figure(figsize=(2,2), facecolor="#00000000")
 plt.imshow(img)
-plt.gca().set_axis_off()
+plt.axis("off")
 plt.show()
 
 ```
@@ -108,3 +115,6 @@ plt.show()
 
 ![](img/caustics.png)
 
+# Documentation
+
+[https://excolor.readthedocs.io](https://excolor.readthedocs.io)
