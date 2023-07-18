@@ -10,7 +10,6 @@ import matplotlib.colors as mc
 from cycler import cycler
 from excolor.utils import _is_arraylike, _is_int, _is_exp, _is_log
 from excolor.utils import _is_qualitative, _is_cyclic, _is_divergent
-from excolor.background import *
 
 import warnings
 warnings.filterwarnings("ignore")

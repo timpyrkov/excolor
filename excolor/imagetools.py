@@ -1,15 +1,110 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
+import requests
 import numpy as np
 import pylab as plt
 from PIL import Image
 import matplotlib.colors as mc
 
 
+def remove_margins():
+    """ 
+    Removes figure margins in matplotlib to keeps only the plot area 
+
+    """
+    plt.gca().set_axis_off()
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0,0)
+    return
+
+
+def load_image(fname):
+    """
+    Converts image to numpy array
+
+    Parameters
+    ----------
+    image : str 
+        Image path or url
+
+    Returns
+    -------
+    img : PIL.PngImagePlugin.PngImageFile
+        Image
+
+    """
+    if fname.find("http://") == 0 or fname.find("https://") == 0:
+        img = Image.open(requests.get(fname, stream=True).raw)
+    else:
+        img = Image.open(fname)
+    return img
+
+
+def show_image(image, figsize=None):
+    """
+    Shows image without matplotlib axes and margins
+
+    Parameters
+    ----------
+    image : str or PIL.PngImagePlugin.PngImageFile
+        Image or image path or url
+
+    """
+    plt.figure(figsize=figsize, facecolor="#00000000")
+    plt.imshow(image)
+    plt.gca().set_axis_off()
+    remove_margins()
+    plt.show()
+    return
+
+
+def image_to_array(image):
+    """
+    Converts image to numpy array
+
+    Parameters
+    ----------
+    image : str or PIL.PngImagePlugin.PngImageFile
+        Image or image path or url
+
+    Returns
+    -------
+    x : ndarray
+        Numpy array of size (nx, ny) or (nx, ny, nchannels)
+
+    """
+    if isinstance(image, str):
+        image = load_image(image)
+    x = np.asarray(image)
+    return x
+
+
+def array_to_image(x):
+    """
+    Converts numpy array to image
+
+    Parameters
+    ----------
+    x : ndarray
+        Numpy array of size (nx, ny, nchannels), nchannels = 3 or 4
+
+    Returns
+    -------
+    img : PIL.PngImagePlugin.PngImageFile
+        Image
+
+    """
+    if x.max() <= 1 + 1e-5:
+        x = 255 * np.clip(x, 0, 1)
+    img = Image.fromarray(x.astype(np.uint8), "RGBA")
+    return img
+    
+
 def smoother(x, window):
     w = np.hanning(max(1,window))
     return np.convolve(x, w/np.sum(w), mode="same")
+
 
 def find_peaks(data):
     values = np.clip(data.flatten(), 0, 1)
@@ -34,12 +129,9 @@ def find_peaks(data):
     return peaks
 
 
-def find_mask(image, midpoint=None, grad_range=None):
-    # Read image
-    if isinstance(image, str):
-        image = Image.open(image)
-    # Convert to numpy array
-    x = np.asarray(image)
+def mask_by_lightness(image, midpoint=None, grad_range=None):
+    # Read image and convert to numpy array
+    x = image_to_array(image)
     # Skip if image is already a mask
     if x.max() <= 1 + 1e-5:
         mask = x
@@ -74,25 +166,22 @@ def find_mask(image, midpoint=None, grad_range=None):
         mask = np.clip(mask, 0, 1)
     return mask
 
+
 def colorize(image, color="blue", bg="white", midpoint=None, grad_range=None):
-    # Read image
-    if isinstance(image, str):
-        image = Image.open(image)
-    # Convert to numpy array
-    x = np.asarray(image)
+    # Read image and convert to numpy array
+    x = image_to_array(image)
+
     # Get mask (1 - black, 0 - white)
-    f = find_mask(x, midpoint, grad_range)
+    f = mask_by_lightness(x, midpoint, grad_range)
     
     # Calc RGBA channels based on color fractions
     c0 = mc.to_rgba(color)
     c1 = mc.to_rgba(bg)
     rgba = [f * c0[i] + (1 - f) * c1[i] for i in range(4)]
     rgba = np.stack(rgba, 2)
-    print(rgba.shape)
     
     # Convert RGBA to image
-    rgba = 255 * np.clip(rgba, 0, 1)
-    img = Image.fromarray(rgba.astype(np.uint8), "RGBA")
+    img = array_to_image(np.clip(rgba, 0, 1))
     return img
 
 

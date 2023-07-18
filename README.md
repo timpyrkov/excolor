@@ -18,6 +18,36 @@ cmap
 
 ![](img/colormap.png)
 
+# Colorize black-and-white image
+
+- Hue and saturation cannot colorize black-and-white image. They only change pixels where levels of red, gree, blue are not the same. 
+
+- Colorize() function takes a greyscale or b&w image and adds colors to darg and light areas.
+
+
+```
+fname = "pacman.png"
+
+img = excolor.load_image(fname)
+
+plt.figure(figsize=(2,2), facecolor="#00000000")
+plt.imshow(img)
+plt.gca().set_axis_off()
+plt.show()
+
+img = excolor.colorize(fname, "yellow", "green")
+
+plt.figure(figsize=(2,2), facecolor="#00000000")
+plt.imshow(img)
+plt.gca().set_axis_off()
+plt.show()
+
+```
+
+![](img/pacman.png)
+![](img/arrow.png)
+![](img/colorized.png)
+
 # Color cycler
 
 Set ax color cycler based on cmap or list of colors
@@ -56,7 +86,7 @@ plt.show()
 
 ![](img/charts.png)
 
-# Log-scaled colormap
+# Log-scaling colormaps
 
 Color perlin noise using log-scaled colormap to visualize water caustics
 
