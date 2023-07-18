@@ -126,7 +126,6 @@ def show_cbar(cmap):
     for e in ["top", "bottom", "right", "left"]:
         plt.gca().spines[e].set_color("#00000000")
     plt.tight_layout()
-    plt.show()
     return
 
 
@@ -154,25 +153,25 @@ def show_colors(c, title="", cname=None):
         is_cmap = False
     d = 0.05
     width = 1  -2 * d
-    if cname is None:
-        cname = [color_to_hex(color) for color in colors]
-    n, m = aspect_ratio(len(colors))
+    n, m = aspect_ratio(len(colors), lmin=12)
     plt.figure(figsize=(2*n+4,2*m), facecolor="#00000000")
     plt.title(title, fontsize=20, color="grey")
     for k, color in enumerate(colors):
         i = k % n
         j = k // n
-        r = Rectangle((i, -j), width, -width, facecolor=color, fill=True)
-        plt.gca().add_patch(r)
-        h, s, v = mc.rgb_to_hsv(mc.to_rgb(color)).T
-        fontcolor = "white" if v < 0.6 else "black"
-        x, y = i + 0.5 - 2 * d, -j - 0.5
-        plt.text(x, y, cname[k], fontsize=20, color=fontcolor, ha="center")
+        rgb = color_to_rgb(color)
+        if rgb is not None:
+            r = Rectangle((i, -j), width, -width, facecolor=rgb, fill=True)
+            plt.gca().add_patch(r)
+            h, s, v = mc.rgb_to_hsv(rgb)
+            fontcolor = "white" if v < 0.6 else "black"
+            x, y = i + 0.5 - 2 * d, -j - 0.5
+            name = cname[k] if cname is not None else color_to_hex(rgb)
+            plt.text(x, y, name, fontsize=20, color=fontcolor, ha="center")
     plt.xlim(-d, n - d)
     plt.ylim(-m + d, d)
     plt.gca().set_axis_off()
     plt.tight_layout()
-    plt.show()
     return
 
 
@@ -223,7 +222,7 @@ def lighten(c, scale=0.5):
         is_cmap = False
     hsv = np.array([mc.rgb_to_hsv(mc.to_rgb(color)) for color in colors]).T
     hsv[2] = hsv[2] + scale * (1 - hsv[2])
-    cmod = [mc.hsv_to_rgb(color) for color in hsv.T]
+    cmod = [mc.to_hex(mc.hsv_to_rgb(color)).upper() for color in hsv.T]
     if is_cmap:
         name = c.name + "_light"
         cmod = LinearSegmentedColormap.from_list(name, cmod)
@@ -258,7 +257,7 @@ def darken(c, scale=0.5):
         is_cmap = False
     hsv = np.array([mc.rgb_to_hsv(mc.to_rgb(color)) for color in colors]).T
     hsv[2] = (1 - scale) * hsv[2]
-    cmod = [mc.hsv_to_rgb(color) for color in hsv.T]
+    cmod = [mc.to_hex(mc.hsv_to_rgb(color)).upper() for color in hsv.T]
     if is_cmap:
         name = c.name + "_dark"
         cmod = LinearSegmentedColormap.from_list(name, cmod)
@@ -293,7 +292,7 @@ def saturate(c, scale=0.5):
         is_cmap = False
     hsv = np.array([mc.rgb_to_hsv(mc.to_rgb(color)) for color in colors]).T
     hsv[1] = hsv[1] + scale * (1 - hsv[1])
-    cmod = [mc.hsv_to_rgb(color) for color in hsv.T]
+    cmod = [mc.to_hex(mc.hsv_to_rgb(color)).upper() for color in hsv.T]
     if is_cmap:
         name = c.name + "_saturated"
         cmod = LinearSegmentedColormap.from_list(name, cmod)
@@ -328,7 +327,7 @@ def desaturate(c, scale=0.5):
         is_cmap = False
     hsv = np.array([mc.rgb_to_hsv(mc.to_rgb(color)) for color in colors]).T
     hsv[1] = (1 - scale) * hsv[1]
-    cmod = [mc.hsv_to_rgb(color) for color in hsv.T]
+    cmod = [mc.to_hex(mc.hsv_to_rgb(color)).upper() for color in hsv.T]
     if is_cmap:
         name = c.name + "_desaturated"
         cmod = LinearSegmentedColormap.from_list(name, cmod)
@@ -354,8 +353,50 @@ def color_to_hex(c, keep_alpha=False):
         Name of color or list of colors
 
     """
-    hexname = mc.to_hex(color, keep_alpha).upper()
+    hexname = mc.to_hex(c, keep_alpha).upper()
     return hexname
+
+
+def color_to_rgb(c):
+    """
+    Converts color(s) to rgb
+
+    Parameters
+    ----------
+    c : str, list, tuple, or matplotlib.colors.Color object
+        Color
+
+    Returns
+    -------
+    rgb : tuple
+        RGB intensities in range [0,1]
+
+    """
+    if c is None:
+        rgb = None
+    else:
+        try:
+            # default matplotlib func
+            rgb = mc.to_rgb(c)
+        except:
+            try:
+                # rgb-int to hex then to rgb
+                hcolor = "#" + "".join(["{:02X}".format(c_) for c_ in c])
+                rgb = mc.to_rgb(hcolor)
+            except:
+                rgb = None
+    # if _is_arraylike(c) and len(c) >=3 and len(c) <= 4:
+    #     rgb = np.array([c_ for c_ in c])
+    #     if rgb.min() >= 0 and rgb.max() > 1 and rgb.max() <= 255:
+    #         # rgb-int to hex then to rgb
+    #         hcolor = "#" + "".join(["{:02X}".format(c_) for c_ in c])
+    #         rgb = mc.to_rgb(hcolor)
+    #     else:
+    #         rgb = mc.to_rgb(c)
+    # else:
+    #     # default matplotlib func
+    #     rgb = mc.to_rgb(c)
+    return rgb
 
 
 def extend_colors(c, n=5):
@@ -440,41 +481,97 @@ def grey_to_aquamarine(scale=0.5):
     return colors
 
 
-def add_cool_warm_colormaps():
+def aspect_ratio(length, lmin=0):
+    """
+    Finds optimal aspect ratio to represent sequence of charts
+
+    Parameters
+    ----------
+    length : int
+        Number of items
+    lmin : int, optional
+        Min number of items to start splitting into rows
+
+    Returns
+    -------
+    n : int
+       Number of columns
+    m : int
+        Number of rows
+
+    """
+    if length > 0:
+        d = np.array([-2, -1, 0, 1, 2])
+        n0 = np.sqrt(length / 2)
+        ns = []
+        ms = []
+        ds = []
+        for s in [4, 5, 6]:
+            n1 = (2 * n0 // s + d).astype(int) * s
+            m1 = np.ceil(length / n1).astype(int)
+            for k in range(5):
+                if n1[k] > 0 and m1[k] > 0 and n1[k] > m1[k]:
+                    delta = n1[k] * m1[k] - length
+                    if delta >= 0:
+                        ns.append(n1[k])
+                        ms.append(m1[k])
+                        ds.append(delta)
+        mask = np.array(ds) == min(ds)
+        ns = np.array(ns)[mask]
+        ms = np.array(ms)[mask]
+        idx = np.argmin(np.abs(ns / ms - 5))
+        n, m = ns[idx], ms[idx]
+        if isinstance(n, np.ndarray):
+            n, m = n[0], m[0]
+        if length <= lmin or n > length:
+            n = length
+    else:
+        n, m = 0, 0
+    return n, m
+
+
+def _register_cmap(cmap):
+    try:
+        plt.colormaps.register(cmap)
+    except:
+        pass
+
+def _add_cool_warm_colormaps():
     """
     Extends list of registered colormaps by modifications of 'coolwarm'
 
     """
     # Divergent to sequential
     gradient = np.linspace(0.5, 1, 128)
+    dct = {"cool": "cold", "warm": "warm"}
     warm_colors = plt.get_cmap("coolwarm")(gradient)
     cool_colors = plt.get_cmap("coolwarm_r")(gradient)
     cmap = LinearSegmentedColormap.from_list("warm", warm_colors)
-    plt.colormaps.register(cmap)
+    _register_cmap(cmap)
     cmap = LinearSegmentedColormap.from_list("warm_r", warm_colors[::-1])
-    plt.colormaps.register(cmap)
+    _register_cmap(cmap)
     cmap = LinearSegmentedColormap.from_list("cold", cool_colors)
-    plt.colormaps.register(cmap)
+    _register_cmap(cmap)
     cmap = LinearSegmentedColormap.from_list("cold_r", cool_colors[::-1])
-    plt.colormaps.register(cmap)
+    _register_cmap(cmap)
     # Log-scaled
     gradient = np.logspace(0, -10, 128)
     logwarm_colors = plt.get_cmap("warm")(gradient)
     logwarm_r_colors = plt.get_cmap("warm_r")(gradient)
     cmap = LinearSegmentedColormap.from_list("logwarm", logwarm_colors)
-    plt.colormaps.register(cmap)
+    _register_cmap(cmap)
     cmap = LinearSegmentedColormap.from_list("logwarm_r", logwarm_r_colors)
-    plt.colormaps.register(cmap)
+    _register_cmap(cmap)
     logcool_colors = plt.get_cmap("cold")(gradient)
     logcool_r_colors = plt.get_cmap("cold_r")(gradient)
     cmap = LinearSegmentedColormap.from_list("logcool", logcool_colors)
-    plt.colormaps.register(cmap)
+    _register_cmap(cmap)
     cmap = LinearSegmentedColormap.from_list("logcool_r", logcool_r_colors)
-    plt.colormaps.register(cmap)
+    _register_cmap(cmap)
     return
 
 
-def add_extended_colormaps():
+def _add_extended_colormaps():
     """
     Extends list of registered colormaps by modifications of 'coolwarm'
     and manually hardcoded colormaps
@@ -488,13 +585,20 @@ def add_extended_colormaps():
     aquamarine_light = lighten(aquamarine, 0.8)
     aquamarine_dark = darken(aquamarine, 0.4)
     color_dict = {
+        "BrBu": ["#9B2227", "#BA3F04", "#CA6705", "#EE9B04", "#EAD7A4", "#93D3BD", "#4BB3A9", "#039396", "#027984", "#015F72"],
+        "BrGn": ["#9B2227", "#BA3F04", "#CA6705", "#EE9B04", "#EAD7A4", "#CAB67B", "#A99945", "#897C0F", "#736E12", "#5E6014"],
+        "OrBu": ["#B97401", "#DC8D01", "#FAC316", "#F8E584", "#F8FFC9", "#638094", "#4C6E83", "#3E596D", "#374053"],
+        "OrGn": ["#B97401", "#DC8D01", "#FAC316", "#F8E584", "#F1FFC1", "#7DA4A4", "#628E8E", "#467171", "#284C4C"],
+        "PiBu": ["#7D433D", "#A45040", "#C45D47", "#DD6850", "#CAA59F", "#4C8A9A", "#427283", "#385B6C", "#2E4355"],
         "gruvbox_light": ["#FB4934", "#FE8019", "#FABD2F", "#B8BB26", "#8EC07C", "#83A598", "#D3869B"],
         "gruvbox": ["#CC241D", "#D65D0E", "#D79921", "#98971A", "#689D6A", "#458588", "#B16286"],
         "gruvbox_dark": ["#9D0006", "#AF3A03", "#B57614", "#79740E", "#427B58", "#076678", "#8F3F71"],
-        "synthwave": ["#A148AB", "#DD517F", "#E68E36", "#EAC180", "#7998EE", "#556DC8"],
-        "aquamarine_light": ["#7E3FE8", "#419AE0", "#00E8BE"],
-        "aquamarine": ["#7239D2", "#3884C0", "#00D2AC"],
-        "aquamarine_dark": ["#391C69", "#1C4260", "#006956"],
+        "artdeco": ["#9F1B10", "#D88533", "#E8B055", "#D9B97B", "#B6BEAA", "#768C86", "#365861", "#204755", "#0A3649"],
+        "cyberpunk": ["#55D6F5", "#5C9BE8", "#6260DC", "#522FAA", "#42007A", "#4F057A", "#5D097C", "#A917BE", "#F225FF"],
+        "synthwave": ["#5C9BE8", "#5368C4", "#4B35A0", "#42007A", "#550584", "#680B8E", "#7B1098", "#A75466", "#D19536", "#FBD606"],
+        "aquamarine_light": ["#7E3FE8", "#439BDF", "#00E8BE"],
+        "aquamarine": ["#7239D2", "#3985BF", "#00D2AC"],
+        "aquamarine_dark": ["#391C69", "#1C4360", "#006956"],
         # "aquamarine_light": aquamarine_light,
         # "aquamarine": aquamarine,
         # "aquamarine_dark": aquamarine_dark,
@@ -506,56 +610,16 @@ def add_extended_colormaps():
             if name.find("_") > 0:
                 name_ = name_ + "_" + "_".join(name.split("_")[1:])
             cmap = ListedColormap(colors_, name_)
-            plt.colormaps.register(cmap)
+            _register_cmap(cmap)
         except:
             pass
     for name, colors in color_dict.items():
         try:
             cmap = ListedColormap(colors, name)
-            plt.colormaps.register(cmap)
+            _register_cmap(cmap)
         except:
             pass
     return
-
-
-def aspect_ratio(length):
-    """
-    Finds optimal aspect ratio to represent sequence of charts
-
-    Parameters
-    ----------
-    length : int
-        Number of items
-
-    Returns
-    -------
-    n : int
-       Number of columns
-    m : int
-        Number of rows
-
-    """
-    d = np.array([-2, -1, 0, 1, 2])
-    n0 = np.sqrt(length / 2)
-    ns = []
-    ms = []
-    ds = []
-    for s in [4, 5, 6]:
-        n1 = (2 * n0 // s + d).astype(int) * s
-        m1 = np.ceil(length / n1).astype(int)
-        for k in range(5):
-            if n1[k] > 0 and m1[k] > 0 and n1[k] > m1[k]:
-                ns.append(n1[k])
-                ms.append(m1[k])
-                ds.append(np.abs(length - n1[k] * m1[k]))
-    mask = np.array(ds) == min(ds)
-    ns = np.array(ns)[mask]
-    ms = np.array(ms)[mask]
-    idx = np.argmin(np.abs(ns / ms - 6.5))
-    n, m = ns[idx], ms[idx]
-    if isinstance(n, np.ndarray) and len(n) > 1:
-        n, m = n[0], m[0]
-    return n, m
 
 
 """ Aliases for functions """

@@ -36,19 +36,21 @@ y_pred = x0 > 0
 c = confusion_matrix(y_true, y_pred)
 
 # Plot heatmap of confusion matrix using "viridis" colormap
-# Then set "viridis" colors for color cycler to make scatter plot
 plt.figure(figsize=(4,2), facecolor="white")
 plt.subplot(121)
 plt.title("Heatmap")
 sns.heatmap(c, annot=True, cmap="viridis", vmin=0)
 plt.subplot(122)
 plt.title("Scatterplot")
+
+# Set "viridis" colors for color cycler to make scatter plot
 excolor.set_color_cycler("viridis", n=2)
 for i in range(2):
     mask = y_true == i
     plt.scatter(x0[mask], x1[mask])
 plt.tight_layout()
 plt.show()
+
 
 ```
 

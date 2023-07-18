@@ -15,6 +15,7 @@ def _is_arraylike(x, epsilon=1e-5):
 
     """
     mask = isinstance(x, np.ndarray) or isinstance(x, list)
+    mask = mask or isinstance(x, tuple) or isinstance(x, set)
     return mask
 
 

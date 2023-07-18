@@ -11,7 +11,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def get_background_color(c):
+def background_color(c):
     """
     Gets color for background
 
@@ -27,11 +27,7 @@ def get_background_color(c):
 
     """
     if isinstance(c, list) or isinstance(c, np.ndarray):
-        if len(c) != 3:
-            errmsg = f"Please, provide either cmap or a list of three colors"
-            raise ValueError(errmsg)
-        else:
-            color = c
+        color = c
     else:
         cmap = plt.get_cmap(c)
         if cmap.name.find("gruvbox") >= 0:
@@ -39,8 +35,10 @@ def get_background_color(c):
                 color = "#FBF1C7"
             else:
                 color = "#1D2021"
+        elif cmap.name.find("cyberpunk") >= 0:
+            color = "#0D0018"
         elif cmap.name.find("synthwave") >= 0:
-            color = "#29132E"
+            color = "#0D0018"
         elif _is_qualitative(cmap):
             color = cmap.colors
             i0, i1, i2 = 0, len(color) // 2, len(color) - 1
@@ -52,7 +50,7 @@ def get_background_color(c):
     return color
 
 
-def get_background(c, fname=None, size=(1280,720)):
+def background_gradient(c, fname=None, size=(1280,720)):
     """
     Gets background based on colors or cmap
 
@@ -72,7 +70,7 @@ def get_background(c, fname=None, size=(1280,720)):
 
     """
     epsilon = 1e-5
-    colors = get_background_color(c)
+    colors = background_color(c)
     colors = colors if isinstance(colors, list) else [colors] * 3
     rgb = np.stack([mc.to_rgb(c) for c in colors]).T
     nx, ny = size
@@ -80,7 +78,7 @@ def get_background(c, fname=None, size=(1280,720)):
     y = np.arange(ny)
     x, y = np.meshgrid(x, y, indexing="xy")
     xs = np.stack([x.flatten(), y.flatten()]).T
-    x0 = np.array([[0,0], [nx,0], [nx, ny]])
+    x0 = np.stack(set_sources(nx, ny, len(colors))).T
     r = np.stack([np.sqrt(np.sum((xs - x_)**2, 1)) for x_ in x0])
     f = np.power(r + epsilon, -1)
     f = f / np.sum(f, axis=0)
@@ -88,14 +86,45 @@ def get_background(c, fname=None, size=(1280,720)):
     rgba = np.stack([rgba[i].reshape(ny,nx) for i in range(4)], axis=2)
     rgba = np.clip(255 * rgba, 0, 255).astype(np.uint8)
     img = Image.fromarray(rgba, "RGBA")
-    if fname is None:
+    if fname is not None:
+        if len(fname) < 5 or fname[-4:] not in [".png", ".jpg", ".svg"]:
+            fname = f"{fname}.png"
+        img.save(fname)
+    else:
         plt.figure(facecolor="#00000000")
         plt.imshow(img)
         plt.gca().set_axis_off()
         plt.show()
-    else:
-        if len(fname) < 5 or fname[-4:] not in [".png", ".jpg", ".svg"]:
-            fname = f"{fname}.png"
-        img.save(fname)
     return img
+
+
+def set_sources(nx, ny, n):
+    """
+    Sets coordinates of color sources for background gradiaents
+    
+    Parameters
+    ----------
+    nx : int
+        Number of pixels along horizontal axis
+    ny : init
+        Number of pixels along vertical axis
+    n : int
+        Number of sources
+
+    Returns
+    -------
+    x : ndarray
+        X-coordinates of sources
+    y : ndarray
+        Y-coordinates of sources
+
+    """
+    r = np.sqrt(nx**2 + ny**2) / 2
+    x0, y0 = nx/2, ny/2
+    phi0 = 8 * np.pi / 10
+    phi = phi0 + np.arange(n) * 2 * np.pi / n
+    z = r * np.exp(1j * phi)
+    x = z.real + x0
+    y = z.imag + y0
+    return x, y
 
