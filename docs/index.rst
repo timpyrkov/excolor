@@ -35,3 +35,11 @@ Quick start
 
    notebook/example
 
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Backgrounds
+
+   notebook/backgrounds
+

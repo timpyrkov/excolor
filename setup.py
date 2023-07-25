@@ -7,7 +7,7 @@ def read(fname):
 
 setup(
     name="excolor",
-    version="0.0.1",
+    version="0.0.2",
     author="Tim Pyrkov",
     author_email="tim.pyrkov@gmail.com",
     description="Extended colors for python",
@@ -26,6 +26,8 @@ setup(
     install_requires=[
         "numpy",
         "matplotlib",
+        "opencv-python",
+        "pythonperlin",
         "seaborn",
         "requests",
     ],

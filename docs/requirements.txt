@@ -2,6 +2,7 @@ ipykernel
 nbsphinx
 IPython
 matplotlib
+opencv-python
 seaborn
 scikit-learn
 pythonperlin

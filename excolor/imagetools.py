@@ -6,6 +6,8 @@ import numpy as np
 import pylab as plt
 from PIL import Image
 import matplotlib.colors as mc
+import cv2 
+
 
 
 def remove_margins():
@@ -16,6 +18,7 @@ def remove_margins():
     plt.gca().set_axis_off()
     plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
     plt.margins(0,0)
+    plt.axis("off")
     return
 
 
@@ -53,7 +56,6 @@ def show_image(image, figsize=None):
     """
     plt.figure(figsize=figsize, facecolor="#00000000")
     plt.imshow(image)
-    plt.gca().set_axis_off()
     remove_margins()
     plt.show()
     return
@@ -65,18 +67,23 @@ def image_to_array(image):
 
     Parameters
     ----------
-    image : str or PIL.PngImagePlugin.PngImageFile
-        Image or image path or url
+    image : str or PIL.PngImagePlugin.PngImageFile or matplotlib.figure.Figure
+        Figure, image or image path or url
 
     Returns
     -------
     x : ndarray
-        Numpy array of size (nx, ny) or (nx, ny, nchannels)
+        Numpy array of size (height, width) or (height, width, nchannels)
+        Data type: uint8, 0-255
 
     """
     if isinstance(image, str):
         image = load_image(image)
-    x = np.asarray(image)
+    try:
+        image.canvas.draw()
+        x = np.asarray(image.canvas.renderer._renderer)
+    except:
+        x = np.asarray(image)
     return x
 
 
@@ -103,7 +110,7 @@ def array_to_image(x):
 
 def smoother(x, window):
     """
-    Converts numpy array to image
+    Performs running window smooth
 
     Parameters
     ----------
@@ -124,6 +131,20 @@ def smoother(x, window):
 
 
 def find_peaks(data):
+    """
+    Finds local peaks in distribution of color intensities
+
+    Parameters
+    ----------
+    data : ndarray
+        1D array of color intensities
+
+    Returns
+    -------
+    peaks : ndarray
+        1D array of intensity peak positions
+
+    """
     values = np.clip(data.flatten(), 0, 1)
     bins = np.round(np.linspace(-0.1,1.1,121), 2)
     idx = 0.5 * (bins[:-1] + bins[1:])
@@ -146,7 +167,28 @@ def find_peaks(data):
     return peaks
 
 
-def mask_by_lightness(image, midpoint=None, grad_range=None):
+def get_mask(image, midpoint=None, grad_range=None, uint8=False):
+    """
+    Converts image to a mask
+
+    Parameters
+    ----------
+    image : ndarray
+        1D array of data
+    midpoint : float or None, default None
+        Midpoint between dark and light areas in range (0,1)
+    grad_range : float or None, default None
+        Gradient range between dark and light
+    uint8 : bool, default False
+        Flag to cast data to np.uint8 to save disk space.
+
+    Returns
+    -------
+    mask : ndarray
+        float: 1.0 - object, 0.0 - background, or
+        uint8: 255 - object, 0 - background
+
+    """
     # Read image and convert to numpy array
     x = image_to_array(image)
     # Skip if image is already a mask
@@ -171,6 +213,9 @@ def mask_by_lightness(image, midpoint=None, grad_range=None):
         # Set midpoint and color gradient range
         if midpoint is not None and grad_range is not None:
             v, dv = midpoint, grad_range
+        elif midpoint is not None:
+            grad_range = min(midpoint, 1 - midpoint) / 2
+            v, dv = midpoint, grad_range
         else:
             # If not given - find peaks and set midpoint inbetween
             peaks = find_peaks(value)
@@ -181,15 +226,39 @@ def mask_by_lightness(image, midpoint=None, grad_range=None):
         v0, v1 = v - dv / 2, v + dv / 2
         mask = (v1 - value) / (v1 - v0)
         mask = np.clip(mask, 0, 1)
+    if uint8:
+        mask = (255 * mask).astype(np.uint8)
     return mask
 
 
 def colorize(image, color="blue", bg="white", midpoint=None, grad_range=None):
+    """
+    Colorizes a b&w image
+
+    Parameters
+    ----------
+    image : str or PIL.PngImagePlugin.PngImageFile
+        Image or image path or url
+    color : str, or matplotlib.colors.Colormap, default 'blue'
+        Color for object
+    bg : str, or matplotlib.colors.Colormap, default 'white'
+        Color for background (can be transparent '#00000000')
+    midpoint : float or None, default None
+        Midpoint between dark and light areas in range (0,1)
+    grad_range : float or None, default None
+        Gradient range between dark and light
+
+    Returns
+    -------
+    img : PIL.PngImagePlugin.PngImageFile
+        Colorized image
+
+    """
     # Read image and convert to numpy array
     x = image_to_array(image)
 
     # Get mask (1 - black, 0 - white)
-    f = mask_by_lightness(x, midpoint, grad_range)
+    f = get_mask(x, midpoint, grad_range)
     
     # Calc RGBA channels based on color fractions
     c0 = mc.to_rgba(color)
@@ -200,5 +269,80 @@ def colorize(image, color="blue", bg="white", midpoint=None, grad_range=None):
     # Convert RGBA to image
     img = array_to_image(np.clip(rgba, 0, 1))
     return img
+
+
+def add_shadow(fig, kernel=(31,31), sigma=10, color="#000000"):
+    """
+    Adds shadow to an object (assuming whate or transparent areas are background)
+    
+    Parameters
+    ----------
+    fig : matplotlib.figure.Figure
+        Image of object on white or transparent background
+    kernel : tuple, default (31,31)
+        Kernel size for gaussian blur
+    sigma : float, default 10
+        Sigma for gaussian blur
+    color : str or matplotlib.colors.Colormap, default "#000000"
+        Shadow color
+
+    Returns
+    -------
+    shadow : ndarray
+        Image of object with shadow
+
+    """
+    fig.canvas.draw()
+    img = np.asarray(fig.canvas.renderer._renderer)
+    mask = get_mask(img, midpoint=0.99, grad_range=0.0, uint8=True)
+    shadow = cv2.GaussianBlur(mask, kernel, sigma)
+    shadow[mask>0] = 255
+    channels = []
+    color = 255 * np.asarray(mc.to_rgb(color))
+    color = color.astype(np.uint8)
+    for i in range(3):
+        channel = img[...,i]
+        channel[mask==0] = color[i]
+        channels.append(channel)
+    channels.append(shadow)
+    shadow = np.stack(channels, axis=2)
+    return shadow
+
+
+def add_glow(fig, kernel=(31,31), sigma=10, include_alpha=False):
+    """
+    Adds glow to an object (assuming whate or transparent areas are background)
+    
+    Parameters
+    ----------
+    fig : matplotlib.figure.Figure
+        Image of object on white or transparent background
+    kernel : tuple, default (31,31)
+        Kernel size for gaussian blur
+    sigma : float, default 10
+        Sigma for gaussian blur
+    include_alpha : bool, default False
+        Flag to include alpha layer (transparency)
+
+    Returns
+    -------
+    glow : ndarray
+        Image of object with glow
+
+    """
+    fig.canvas.draw()
+    img = np.asarray(fig.canvas.renderer._renderer)
+    mask = get_mask(img, midpoint=0.99, grad_range=0.0, uint8=True)
+    img = [img[...,i] for i in range(3)] + [mask]
+    channels = []
+    for i in range(3 + include_alpha):
+        layer = img[i]
+        layer[mask==0] = 0
+        blurred = cv2.GaussianBlur(layer, kernel, sigma)
+        blurred = np.stack([layer, blurred])
+        channel = np.max(blurred, axis=0)
+        channels.append(channel)
+    glow = np.stack(channels, axis=2)
+    return glow
 
 

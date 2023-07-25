@@ -8,51 +8,13 @@ import seaborn as sns
 from matplotlib.patches import Rectangle
 import matplotlib.colors as mc
 from cycler import cycler
-from excolor.utils import _is_arraylike, _is_int, _is_exp, _is_log
-from excolor.utils import _is_qualitative, _is_cyclic, _is_divergent
+from excolor.utils import _is_arraylike, _is_int, _is_exp, _is_log, _is_cmap
+from excolor.utils import _is_qualitative, _is_cyclic, _is_divergent, _get_bgcolor_dict
+from excolor.utils import *
+
 
 import warnings
 warnings.filterwarnings("ignore")
-
-
-def get_colors(cmap, n=None, exclude_extreme=True, mode="hex"):
-    """
-    Gets colors from cmap
-
-    Parameters
-    ----------
-    cmap : str or matplotlib.colors.Colormap object
-        Colormap
-    n : int, optional
-        Number of colors
-    exclude_extreme : bool, default True
-        Whethr to exclude extreme (very dark/light) colors
-    mode : {"hex", "rgb", "rgba", "hsv"}, default "hex"
-        Format of colors
-
-    Returns
-    -------
-    colors : list
-        List of colors
-
-    """
-    assert mode in ["hex", "rgb", "rgba", "hsv"]
-    cmap = plt.get_cmap(cmap)
-    if _is_qualitative(cmap):
-        colors = cmap.colors
-    else:
-        n = 10 - _is_divergent(cmap) if n is None else n
-        dn = 1 if exclude_extreme else 0
-        idx = np.arange(dn, n + dn) / (n + 2 * dn - 1)
-        colors = cmap(idx)
-    colors = [mc.to_hex(c, keep_alpha=False).upper() for c in colors]
-    if mode == "rgb":
-        colors = [mc.to_rgb(c) for c in colors]
-    elif mode == "rgba":
-        colors = [mc.to_rgba(c) for c in colors]
-    elif mode == "hsv":
-        colors = [mc.rgb_to_hsv(mc.to_rgb(c)) for c in colors]
-    return colors
 
 
 def logscale_cmap(cmap, norders=3):
@@ -146,10 +108,8 @@ def show_colors(c, title="", cname=None):
         c = plt.get_cmap(c)
         colors = get_colors(c, exclude_extreme=False)
         title = c.name
-        is_cmap = True
     except:
         colors = c if _is_arraylike(c) else [c]
-        is_cmap = False
     d = 0.05
     width = 1  -2 * d
     n, m = aspect_ratio(len(colors), lmin=12)
@@ -215,17 +175,15 @@ def lighten(c, scale=0.5):
     try:
         c = plt.get_cmap(c)
         colors = get_colors(c, 256, exclude_extreme=False)
-        is_cmap = True
     except:
         colors = c if _is_arraylike(c) else [c]
-        is_cmap = False
     hsv = np.array([mc.rgb_to_hsv(mc.to_rgb(color)) for color in colors]).T
     hsv[2] = hsv[2] + scale * (1 - hsv[2])
     cmod = [mc.to_hex(mc.hsv_to_rgb(color)).upper() for color in hsv.T]
-    if is_cmap:
+    if _is_cmap(c):
         name = c.name + "_light"
         cmod = LinearSegmentedColormap.from_list(name, cmod)
-    elif len(cmod) < 2:
+    elif len(cmod) == 1:
         cmod = cmod[0]
     return cmod
 
@@ -250,17 +208,15 @@ def darken(c, scale=0.5):
     try:
         c = plt.get_cmap(c)
         colors = get_colors(c, 256, exclude_extreme=False)
-        is_cmap = True
     except:
         colors = c if _is_arraylike(c) else [c]
-        is_cmap = False
     hsv = np.array([mc.rgb_to_hsv(mc.to_rgb(color)) for color in colors]).T
     hsv[2] = (1 - scale) * hsv[2]
     cmod = [mc.to_hex(mc.hsv_to_rgb(color)).upper() for color in hsv.T]
-    if is_cmap:
+    if _is_cmap(c):
         name = c.name + "_dark"
         cmod = LinearSegmentedColormap.from_list(name, cmod)
-    elif len(cmod) < 2:
+    elif len(cmod) == 1:
         cmod = cmod[0]
     return cmod
 
@@ -285,17 +241,15 @@ def saturate(c, scale=0.5):
     try:
         c = plt.get_cmap(c)
         colors = get_colors(c, 256, exclude_extreme=False)
-        is_cmap = True
     except:
         colors = c if _is_arraylike(c) else [c]
-        is_cmap = False
     hsv = np.array([mc.rgb_to_hsv(mc.to_rgb(color)) for color in colors]).T
     hsv[1] = hsv[1] + scale * (1 - hsv[1])
     cmod = [mc.to_hex(mc.hsv_to_rgb(color)).upper() for color in hsv.T]
-    if is_cmap:
+    if _is_cmap(c):
         name = c.name + "_saturated"
         cmod = LinearSegmentedColormap.from_list(name, cmod)
-    elif len(cmod) < 2:
+    elif len(cmod) == 1:
         cmod = cmod[0]
     return cmod
 
@@ -320,17 +274,15 @@ def desaturate(c, scale=0.5):
     try:
         c = plt.get_cmap(c)
         colors = get_colors(c, 256, exclude_extreme=False)
-        is_cmap = True
     except:
         colors = c if _is_arraylike(c) else [c]
-        is_cmap = False
     hsv = np.array([mc.rgb_to_hsv(mc.to_rgb(color)) for color in colors]).T
     hsv[1] = (1 - scale) * hsv[1]
     cmod = [mc.to_hex(mc.hsv_to_rgb(color)).upper() for color in hsv.T]
-    if is_cmap:
+    if _is_cmap(c):
         name = c.name + "_desaturated"
         cmod = LinearSegmentedColormap.from_list(name, cmod)
-    elif len(cmod) < 2:
+    elif len(cmod) == 1:
         cmod = cmod[0]
     return cmod
 
@@ -384,17 +336,6 @@ def color_to_rgb(c):
                 rgb = mc.to_rgb(hcolor)
             except:
                 rgb = None
-    # if _is_arraylike(c) and len(c) >=3 and len(c) <= 4:
-    #     rgb = np.array([c_ for c_ in c])
-    #     if rgb.min() >= 0 and rgb.max() > 1 and rgb.max() <= 255:
-    #         # rgb-int to hex then to rgb
-    #         hcolor = "#" + "".join(["{:02X}".format(c_) for c_ in c])
-    #         rgb = mc.to_rgb(hcolor)
-    #     else:
-    #         rgb = mc.to_rgb(c)
-    # else:
-    #     # default matplotlib func
-    #     rgb = mc.to_rgb(c)
     return rgb
 
 
@@ -529,101 +470,10 @@ def aspect_ratio(length, lmin=0):
     return n, m
 
 
-def _register_cmap(cmap):
-    try:
-        plt.colormaps.register(cmap)
-    except:
-        pass
-
-def _add_cool_warm_colormaps():
-    """
-    Extends list of registered colormaps by modifications of 'coolwarm'
-
-    """
-    # Divergent to sequential
-    gradient = np.linspace(0.5, 1, 128)
-    dct = {"cool": "cold", "warm": "warm"}
-    warm_colors = plt.get_cmap("coolwarm")(gradient)
-    cool_colors = plt.get_cmap("coolwarm_r")(gradient)
-    cmap = LinearSegmentedColormap.from_list("warm", warm_colors)
-    _register_cmap(cmap)
-    cmap = LinearSegmentedColormap.from_list("warm_r", warm_colors[::-1])
-    _register_cmap(cmap)
-    cmap = LinearSegmentedColormap.from_list("cold", cool_colors)
-    _register_cmap(cmap)
-    cmap = LinearSegmentedColormap.from_list("cold_r", cool_colors[::-1])
-    _register_cmap(cmap)
-    # Log-scaled
-    gradient = np.logspace(0, -10, 128)
-    logwarm_colors = plt.get_cmap("warm")(gradient)
-    logwarm_r_colors = plt.get_cmap("warm_r")(gradient)
-    cmap = LinearSegmentedColormap.from_list("logwarm", logwarm_colors)
-    _register_cmap(cmap)
-    cmap = LinearSegmentedColormap.from_list("logwarm_r", logwarm_r_colors)
-    _register_cmap(cmap)
-    logcool_colors = plt.get_cmap("cold")(gradient)
-    logcool_r_colors = plt.get_cmap("cold_r")(gradient)
-    cmap = LinearSegmentedColormap.from_list("logcool", logcool_colors)
-    _register_cmap(cmap)
-    cmap = LinearSegmentedColormap.from_list("logcool_r", logcool_r_colors)
-    _register_cmap(cmap)
-    return
-
-
-def _add_extended_colormaps():
-    """
-    Extends list of registered colormaps by modifications of 'coolwarm'
-    and manually hardcoded colormaps
-
-    """
-    try:
-        add_cool_warm_colormaps()
-    except:
-        pass
-    aquamarine = grey_to_aquamarine()
-    aquamarine_light = lighten(aquamarine, 0.8)
-    aquamarine_dark = darken(aquamarine, 0.4)
-    color_dict = {
-        "BrBu": ["#9B2227", "#BA3F04", "#CA6705", "#EE9B04", "#EAD7A4", "#93D3BD", "#4BB3A9", "#039396", "#027984", "#015F72"],
-        "BrGn": ["#9B2227", "#BA3F04", "#CA6705", "#EE9B04", "#EAD7A4", "#CAB67B", "#A99945", "#897C0F", "#736E12", "#5E6014"],
-        "OrBu": ["#B97401", "#DC8D01", "#FAC316", "#F8E584", "#F8FFC9", "#638094", "#4C6E83", "#3E596D", "#374053"],
-        "OrGn": ["#B97401", "#DC8D01", "#FAC316", "#F8E584", "#F1FFC1", "#7DA4A4", "#628E8E", "#467171", "#284C4C"],
-        "PiBu": ["#7D433D", "#A45040", "#C45D47", "#DD6850", "#CAA59F", "#4C8A9A", "#427283", "#385B6C", "#2E4355"],
-        "gruvbox_light": ["#FB4934", "#FE8019", "#FABD2F", "#B8BB26", "#8EC07C", "#83A598", "#D3869B"],
-        "gruvbox": ["#CC241D", "#D65D0E", "#D79921", "#98971A", "#689D6A", "#458588", "#B16286"],
-        "gruvbox_dark": ["#9D0006", "#AF3A03", "#B57614", "#79740E", "#427B58", "#076678", "#8F3F71"],
-        "artdeco": ["#9F1B10", "#D88533", "#E8B055", "#D9B97B", "#B6BEAA", "#768C86", "#365861", "#204755", "#0A3649"],
-        "cyberpunk": ["#55D6F5", "#5C9BE8", "#6260DC", "#522FAA", "#42007A", "#4F057A", "#5D097C", "#A917BE", "#F225FF"],
-        "synthwave": ["#5C9BE8", "#5368C4", "#4B35A0", "#42007A", "#550584", "#680B8E", "#7B1098", "#A75466", "#D19536", "#FBD606"],
-        "aquamarine_light": ["#7E3FE8", "#439BDF", "#00E8BE"],
-        "aquamarine": ["#7239D2", "#3985BF", "#00D2AC"],
-        "aquamarine_dark": ["#391C69", "#1C4360", "#006956"],
-        # "aquamarine_light": aquamarine_light,
-        # "aquamarine": aquamarine,
-        # "aquamarine_dark": aquamarine_dark,
-    }
-    for name, colors in color_dict.items():
-        try:
-            colors_ = colors[::-1]
-            name_ = name.split("_")[0] + "_r"
-            if name.find("_") > 0:
-                name_ = name_ + "_" + "_".join(name.split("_")[1:])
-            cmap = ListedColormap(colors_, name_)
-            _register_cmap(cmap)
-        except:
-            pass
-    for name, colors in color_dict.items():
-        try:
-            cmap = ListedColormap(colors, name)
-            _register_cmap(cmap)
-        except:
-            pass
-    return
-
 
 """ Aliases for functions """
-show_colormap = show_cmap
-show_colorbar = show_cbar
+# show_colormap = show_cmap
+# show_colorbar = show_cbar
 gray_to_hue = grey_to_hue
 gray_to_aquamarine = grey_to_aquamarine
 
