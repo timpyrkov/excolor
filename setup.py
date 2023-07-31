@@ -7,7 +7,7 @@ def read(fname):
 
 setup(
     name="excolor",
-    version="0.0.2",
+    version="0.0.3",
     author="Tim Pyrkov",
     author_email="tim.pyrkov@gmail.com",
     description="Extended colors for python",
