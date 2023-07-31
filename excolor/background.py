@@ -245,7 +245,7 @@ def background_gradient(c, fname=None, size=(1280,720), monochrome=None):
     return img
 
 
-def background_concentric_lines(colors, background, fname=None, size=(16,9), dpi=80, center=(2,-2), seed=0, nrep=4):
+def background_concentric_lines(colors, background, fname=None, size=(1280,720), dpi=80, center=(0,0), seed=0, nrep=4):
     """
     Draws background with distorted concentric lines
 
@@ -253,15 +253,15 @@ def background_concentric_lines(colors, background, fname=None, size=(16,9), dpi
     ----------
     colors : list
         List of colors
-    background : str or matplotlib.colors.Colormap
-        Background color
+    background : str, matplotlib.colors.Color or image
+        Background color or image
     fname : str or None, default None
         If fname given - saves image to file
-    size : tuple, default (16, 9)
-        Size of output background image [inches]
+    size : tuple, default (1280,720)
+        Size of output background image [pixels]
     dpi: int, default 80
         Resolution [dpi]
-    center : tuple, default (2, -2)
+    center : tuple, default (0,0)
         Coordinates of circle center from the right bottom corner [inches]
     seed : int, default 0
         Random seed for generation of distorting Perlin noise
@@ -276,22 +276,30 @@ def background_concentric_lines(colors, background, fname=None, size=(16,9), dpi
     """
     n_major = nrep
     n_minor = len(colors)
-    x_max = size[0] + center[0]
-    y_max = size[1] - center[1]
-    r_max = np.sqrt(x_max**2 + y_max**2) + .5
-    r_min = 2 * r_max / 3
+    x_max = size[0] + dpi * center[0]
+    y_max = size[1] - dpi * center[1]
+    r_max = np.sqrt(x_max**2 + y_max**2)
+    r_min = 0.6 * r_max
     dr_major = (r_max - r_min) / n_major
     dr_minor = dr_major / (n_minor + 1)
     dens = 20
     n = np.ceil(n_major * n_minor / dens).astype(int) + 1
     p = perlin((n,36), dens=dens, seed=seed)[dens//2:]
-    fig = plt.figure(figsize=size, facecolor=background)
+    inch_size = (size[0] / dpi, size[1] / dpi)
+    try:
+        bgcolor = mc.to_rgb(background)
+        fig = plt.figure(figsize=inch_size, facecolor=bgcolor)
+    except:
+        fig = plt.figure(figsize=inch_size, facecolor="#00000000")
+        img = image_to_array(background)
+        plt.imshow(img[::-1])
+    fig.set_dpi(dpi)
     for i in range(n_major):
         for j in range(n_minor):
             k = n_minor * i + j
             r = r_min + dr_major * i + dr_minor * j
             x, y = get_circle_dots(r, n=720)
-            x, y = distort_radius(x, y, 2 * p[k])
+            x, y = distort_radius(x, y, 2 * dpi * p[k])
             x += size[0] + center[0]
             y += center[1]
             lw = n_minor + 2 - 1 * (j % n_minor)
@@ -310,7 +318,7 @@ def background_concentric_lines(colors, background, fname=None, size=(16,9), dpi
 
     
 
-def background_concentric_patches(colors, bgcolor, fname=None, size=(16,9), dpi=80, center=(2,-2), seed=0):
+def background_concentric_patches(colors, background, fname=None, size=(1280,720), dpi=80, center=(0,0), seed=0):
     """
     Draws background with distorted concentric patches
 
@@ -318,15 +326,15 @@ def background_concentric_patches(colors, bgcolor, fname=None, size=(16,9), dpi=
     ----------
     colors : list
         List of colors
-    background : str or matplotlib.colors.Colormap
-        Background color
+    background : str, matplotlib.colors.Color or image
+        Background color or image
     fname : str or None, default None
         If fname given - saves image to file
-    size : tuple, default (16, 9)
-        Size of output background image [inches]
+    size : tuple, default (1280,720)
+        Size of output background image [pixels]
     dpi: int, default 80
         Resolution [dpi]
-    center : tuple, default (2, -2)
+    center : tuple, default (0,0)
         Coordinates of circle center from the right bottom corner [inches]
     seed : int, default 0
         Random seed for generation of distorting Perlin noise
@@ -337,12 +345,14 @@ def background_concentric_patches(colors, bgcolor, fname=None, size=(16,9), dpi=
         Backgraound image
 
     """
-    def _draw_patch(x, y, size, color):
-        mask = (x > -1) & (x < size[0] + 1) & (y > -1) & (y < size[1] + 1)
-        x, y = x[mask], y[mask]
-        x = np.concatenate([x, np.array([-1, -1, x[0], x[0]])])
-        y = np.concatenate([y, np.array([-1, size[1]+1,size[1]+1, y[0]])])
-        fig = plt.figure(figsize=size, facecolor="#00000000")
+    def _draw_patch(x, y, size, color, dpi):
+        inch_size = (size[0] / dpi, size[1] / dpi)
+        dx = np.array([size[0] + dpi, -dpi, -dpi, size[0] + dpi])
+        dy = np.array([-dpi, -dpi, size[1] + dpi, size[1] + dpi])
+        x = np.concatenate([x, dx])
+        y = np.concatenate([y, dy])
+        fig = plt.figure(figsize=inch_size, facecolor="#00000000")
+        fig.set_dpi(dpi)
         plt.fill(x, y, c=color)
         plt.xlim(0, size[0])
         plt.ylim(0, size[1])
@@ -351,29 +361,37 @@ def background_concentric_patches(colors, bgcolor, fname=None, size=(16,9), dpi=
         plt.close()
         return x
     n_major = len(colors)
-    x_max = size[0] + center[0]
-    y_max = size[1] - center[1]
-    r_max = np.sqrt(x_max**2 + y_max**2) + .5
-    r_min = 2 * r_max / 3
+    x_max = size[0] + dpi * center[0]
+    y_max = size[1] - dpi * center[1]
+    r_max = np.sqrt(x_max**2 + y_max**2)
+    r_min = 0.6 * r_max
     dr_major = (r_max - r_min) / n_major
     dens = 20
     n = np.ceil(n_major * 6 / dens).astype(int) + 1
     p = perlin((n,36), dens=dens, seed=seed)[dens//2:]
+    inch_size = (size[0] / dpi, size[1] / dpi)
     layers = []
     for i in range(n_major):
         k = 8 * i
         r = r_min + dr_major * i
         x, y = get_circle_dots(r, n=720)
-        x, y = distort_radius(x, y, 2 * p[k])
+        x, y = distort_radius(x, y, 2 * dpi * p[k])
         x += size[0] + center[0]
         y += center[1]
-        x = _draw_patch(x, y, size, colors[i])
+        x = _draw_patch(x, y, size, colors[i], dpi)
         layers.append(x)
-    plt.figure(figsize=size, facecolor=bgcolor)
+    try:
+        bgcolor = mc.to_rgb(background)
+        fig = plt.figure(figsize=inch_size, facecolor=bgcolor)
+    except:
+        fig = plt.figure(figsize=inch_size, facecolor="#00000000")
+        img = image_to_array(background)
+        plt.imshow(img[::-1])
+    fig.set_dpi(dpi)
     for layer in layers:
-        plt.imshow(layer)
-    # plt.xlim(0, size[0])
-    # plt.ylim(0, size[1])
+        plt.imshow(layer[::-1])
+    plt.xlim(0, size[0])
+    plt.ylim(0, size[1])
     remove_margins()
     if fname is not None:
         if len(fname) < 5 or fname[-4:] not in [".png", ".jpg", ".svg"]:

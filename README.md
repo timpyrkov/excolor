@@ -23,7 +23,7 @@ cmap = plt.get_cmap("gruvbox")
 cmap
 ```
 
-![](img/colormap.png)
+![](https://github.com/timpyrkov/excolor/blob/master/img/colormap.png?raw=true)
 
 # Colorize black-and-white image
 
@@ -51,9 +51,9 @@ plt.show()
 
 ```
 
-![](img/pacman.png)
-![](img/arrow.png)
-![](img/colorized.png)
+![](https://github.com/timpyrkov/excolor/blob/master/img/pacman.png?raw=true)
+![](https://github.com/timpyrkov/excolor/blob/master/img/arrow.png?raw=true)
+![](https://github.com/timpyrkov/excolor/blob/master/img/colorized.png?raw=true)
 
 # Color cycler
 
@@ -91,7 +91,7 @@ plt.show()
 
 ```
 
-![](img/charts.png)
+![](https://github.com/timpyrkov/excolor/blob/master/img/charts.png?raw=true)
 
 # Log-scaling colormaps
 
@@ -113,7 +113,7 @@ plt.axis("off")
 plt.show()
 ```
 
-![](img/caustics.png)
+![](https://github.com/timpyrkov/excolor/blob/master/img/caustics.png?raw=true)
 
 # Documentation
 

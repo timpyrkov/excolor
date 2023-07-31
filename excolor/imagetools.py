@@ -61,14 +61,16 @@ def show_image(image, figsize=None):
     return
 
 
-def image_to_array(image):
+def image_to_array(image, dpi=72):
     """
     Converts image to numpy array
 
     Parameters
     ----------
-    image : str or PIL.PngImagePlugin.PngImageFile or matplotlib.figure.Figure
+    image : str, ndarray, PIL.PngImagePlugin.PngImageFile or matplotlib.figure.Figure
         Figure, image or image path or url
+    dpi : int, default 72
+        Image resolution [dpi]; only apllies to matplotlib.figure.Figure
 
     Returns
     -------
@@ -80,6 +82,7 @@ def image_to_array(image):
     if isinstance(image, str):
         image = load_image(image)
     try:
+        image.set_dpi(dpi)
         image.canvas.draw()
         x = np.asarray(image.canvas.renderer._renderer)
     except:
@@ -167,18 +170,20 @@ def find_peaks(data):
     return peaks
 
 
-def get_mask(image, midpoint=None, grad_range=None, uint8=False):
+def get_mask(image, midpoint=None, grad_range=None, dpi=72, uint8=False):
     """
     Converts image to a mask
 
     Parameters
     ----------
-    image : ndarray
+    image : str, ndarray, PIL.PngImagePlugin.PngImageFile or matplotlib.figure.Figure
         1D array of data
     midpoint : float or None, default None
         Midpoint between dark and light areas in range (0,1)
     grad_range : float or None, default None
         Gradient range between dark and light
+    dpi : int, default 72
+        Image resolution [dpi]; only apllies to matplotlib.figure.Figure
     uint8 : bool, default False
         Flag to cast data to np.uint8 to save disk space.
 
@@ -190,7 +195,7 @@ def get_mask(image, midpoint=None, grad_range=None, uint8=False):
 
     """
     # Read image and convert to numpy array
-    x = image_to_array(image)
+    x = image_to_array(image, dpi)
     # Skip if image is already a mask
     if x.max() <= 1 + 1e-5:
         mask = x

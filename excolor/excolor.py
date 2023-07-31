@@ -90,7 +90,7 @@ def show_cbar(cmap):
     return
 
 
-def show_colors(c, title="", cname=None):
+def show_colors(c, title="", cname=None, verbose=True):
     """
     Plots colors from list or a colormap
 
@@ -98,10 +98,12 @@ def show_colors(c, title="", cname=None):
     ----------
     c : list, str, or matplotlib.colors.Colormap object
         List of colors or a colormap
-    title : str, optional
+    title : str, default ''
         Figure title
-    cname : list, optional
+    cname : list or None, default None
         List of color names
+    verbose : bool, default True
+        Flag to print color names
 
     """
     try:
@@ -110,6 +112,8 @@ def show_colors(c, title="", cname=None):
         title = c.name
     except:
         colors = c if _is_arraylike(c) else [c]
+    if verbose:
+        print(colors)
     d = 0.05
     width = 1  -2 * d
     n, m = aspect_ratio(len(colors), lmin=12)
