@@ -22,6 +22,60 @@ def remove_margins():
     return
 
 
+def to_prime_factors(n):
+    """
+    Utility function to split a number into prime factors
+    
+    Parameters
+    ----------
+    n : int
+        Width or height
+
+    Returns
+    -------
+    factors : list
+        Prime number factors
+
+    """
+    factors = []
+    i = 2
+    while i * i < n:
+        if n % i:
+            i += 1
+        else:
+            n //= i
+            factors.append(i)
+    factors.append(n)
+    factors.append(1)
+    return factors
+
+
+def size_to_size_and_dpi(size):
+    """
+    Splits image size (pixels) into size (~5 x 5 inches) and dpi
+    
+    Parameters
+    ----------
+    size : tuple
+        Width and height [pixels]
+
+    Returns
+    -------
+    size : tuple
+        Output image size [inches]
+    dpi : int
+        Output image resolution [dots per inch]
+
+    """
+    dpi = np.gcd(*size)
+    size = np.asarray(size) // dpi
+    dpi = to_prime_factors(dpi)
+    while size.min() < 5 and max(dpi) > 1:
+        size = dpi.pop(0) * size
+    dpi = np.prod(dpi)
+    return size, dpi
+
+
 def load_image(fname):
     """
     Converts image to numpy array
