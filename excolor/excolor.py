@@ -159,7 +159,7 @@ def set_color_cycler(c, n=3):
     return
 
 
-def lighten(c, scale=0.5):
+def lighten(c, scale=0.5, keephue=True):
     """
     Lightens colors or colormap
 
@@ -169,6 +169,8 @@ def lighten(c, scale=0.5):
         List of colors or a colormap
     scale : float, optional
         Scale in range (0,1) - propensity of lightening
+    keephue : bool, default True
+        If True - preserve hue
 
     Returns
     -------
@@ -181,9 +183,14 @@ def lighten(c, scale=0.5):
         colors = get_colors(c, 256, exclude_extreme=False)
     except:
         colors = c if _is_arraylike(c) else [c]
-    hsv = np.array([mc.rgb_to_hsv(mc.to_rgb(color)) for color in colors]).T
-    hsv[2] = hsv[2] + scale * (1 - hsv[2])
-    cmod = [mc.to_hex(mc.hsv_to_rgb(color)).upper() for color in hsv.T]
+    if keephue:
+        hsv = np.array([mc.rgb_to_hsv(mc.to_rgb(color)) for color in colors]).T
+        hsv[2] = hsv[2] + scale * (1 - hsv[2])
+        cmod = [mc.to_hex(mc.hsv_to_rgb(color)).upper() for color in hsv.T]
+    else:
+        rgb = np.array([mc.to_rgb(color) for color in colors])
+        rgb = rgb + scale * (1 - rgb)
+        cmod = [mc.to_hex(color).upper() for color in rgb]
     if _is_cmap(c):
         name = c.name + "_light"
         cmod = LinearSegmentedColormap.from_list(name, cmod)
