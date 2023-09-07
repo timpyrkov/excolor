@@ -1,6 +1,7 @@
 ipykernel
 nbsphinx
 IPython
+sphinx-rtd-theme
 matplotlib
 opencv-python
 seaborn
