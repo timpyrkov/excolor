@@ -9,6 +9,30 @@ from matplotlib.patches import Rectangle
 import matplotlib.colors as mc
 
 
+def extend_colors(c, n=5):
+    """
+    Extends list of colors by adding colors inbetween
+
+    Parameters
+    ----------
+    c : list
+        List of colors
+    n : int, optional
+        Number of colors to output
+
+    Returns
+    -------
+    colors : list
+       List of colors
+
+    """
+    gradient = np.linspace(0,1,n)
+    cmap = LinearSegmentedColormap.from_list("cmap", c)
+    colors = cmap(gradient)
+    colors = [mc.to_hex(color).upper() for color in colors]
+    return colors
+
+
 def get_colors(cmap, n=None, exclude_extreme=True):
     """
     Gets colors from cmap
@@ -31,6 +55,10 @@ def get_colors(cmap, n=None, exclude_extreme=True):
     cmap = plt.get_cmap(cmap)
     if _is_qualitative(cmap):
         colors = cmap.colors
+        if n is not None:
+            colors = extend_colors(colors, n=10*len(colors))
+            cmap = LinearSegmentedColormap.from_list("cmap", colors)
+            colors = get_colors(cmap, n, exclude_extreme)
     else:
         n = 10 - _is_divergent(cmap) if n is None else n
         dn = 1 if exclude_extreme else 0

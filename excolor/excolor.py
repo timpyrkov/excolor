@@ -350,30 +350,6 @@ def color_to_rgb(c):
     return rgb
 
 
-def extend_colors(c, n=5):
-    """
-    Extends list of colors by adding colors inbetween
-
-    Parameters
-    ----------
-    c : list
-        List of colors
-    n : int, optional
-        Number of colors to output
-
-    Returns
-    -------
-    colors : list
-       List of colors
-
-    """
-    gradient = np.linspace(0,1,n)
-    cmap = LinearSegmentedColormap.from_list("cmap", c)
-    colors = cmap(gradient)
-    colors = [mc.to_hex(color).upper() for color in colors]
-    return colors
-
-
 def grey_to_hue(scale=0.5):
     """
     Generates colors of different huw with a given greyscale level
