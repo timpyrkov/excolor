@@ -58,7 +58,7 @@ def get_colors(cmap, n=None, exclude_extreme=True):
         if n is not None:
             colors = extend_colors(colors, n=10*len(colors))
             cmap = LinearSegmentedColormap.from_list("cmap", colors)
-            colors = get_colors(cmap, n, exclude_extreme)
+            colors = get_colors(cmap, n, exclude_extreme=False)
     else:
         n = 10 - _is_divergent(cmap) if n is None else n
         dn = 1 if exclude_extreme else 0

@@ -42,6 +42,31 @@ def logscale_cmap(cmap, norders=3):
     return cmod
 
 
+def list_cmaps(show=False):
+    """
+    List (and show) all registered colormaps
+
+    Parameters
+    ----------
+    show : bool, default False
+        Flag to show colors of cmaps
+
+    """
+    for cmap in plt.colormaps():
+        labels = ['Discrete'] if _is_qualitative(cmap) else ['Continuous']
+        if _is_divergent(cmap):
+            labels.append('Divergent')
+        if _is_cyclic(cmap):
+            labels.append('Cyclic')
+        labels = [f'{l:10}' for l in labels]
+        prtstr = f'{cmap:20}' + (' ').join(labels)
+        print(prtstr)
+        if show:
+            show_colors(cmap, verbose=False)
+            plt.show()
+    return
+
+
 def show_cmap(cmap, gradient=None):
     """
     Plots colormap as colors
@@ -56,13 +81,12 @@ def show_cmap(cmap, gradient=None):
     """
     cmap = plt.get_cmap(cmap)
     if gradient is None:
-        gradient = np.arange(10)
-    cname = [f"{g + 1:.0f}" for g in gradient]
-    if _is_exp(gradient):
-        cname = [f"{g:.2e}" for g in gradient]
-    gradient = gradient / np.max(gradient)
-    colors = plt.get_cmap(cmap)(gradient)
-    show_colors(colors, cmap.name, cname)
+        colors = get_colors(cmap, exclude_extreme=False)
+    else:
+        gradient = gradient / np.max(gradient)
+        colors = plt.get_cmap(cmap)(gradient)
+    colors = [color_to_hex(c) for c in colors]
+    show_colors(colors, cmap.name)
     return
 
 
@@ -436,7 +460,7 @@ def aspect_ratio(length, lmin=0):
         for s in [4, 5, 6]:
             n1 = (2 * n0 // s + d).astype(int) * s
             m1 = np.ceil(length / n1).astype(int)
-            for k in range(5):
+            for k in range(len(n1)):
                 if n1[k] > 0 and m1[k] > 0 and n1[k] > m1[k]:
                     delta = n1[k] * m1[k] - length
                     if delta >= 0:

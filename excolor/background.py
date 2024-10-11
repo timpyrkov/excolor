@@ -44,18 +44,20 @@ def get_bgcolor(cmap):
     return color
 
 
-def set_circular_sources(nx, ny, n):
+def set_color_sources(n, nx, ny, alpha=0):
     """
     Sets coordinates of color sources for background gradiaents
     
     Parameters
     ----------
+    n : int
+        Number of sources
     nx : int
         Number of pixels along horizontal axis
     ny : int
         Number of pixels along vertical axis
-    n : int
-        Number of sources
+    alpha : float, default 0
+        Start angle [degrees]
 
     Returns
     -------
@@ -66,38 +68,39 @@ def set_circular_sources(nx, ny, n):
 
     """
     r = np.sqrt(nx**2 + ny**2) / 2
-    x0, y0 = nx/2, ny/2
-    phi0 = (0.55 + 1 / n) * np.pi
+    phi0 = np.pi * alpha / 180.0
     phi = phi0 + np.arange(n) * 2 * np.pi / n
     z = r * np.exp(1j * phi)
-    x = z.real + x0
-    y = z.imag + y0
+    x = z.real
+    y = z.imag
     return x, y
 
 
-def show_circular_sources(nx=160, ny=90, n=3, c="coolwarm"):
+def show_color_sources(colors, nx=160, ny=90, alpha=0):
     """
     Shows color sorces positions
 
     Parameters
     ----------
+    colors : list
+        List of colors
     nx : int, default 160
         Number of pixels along horizontal axis
     ny : int, default 90
         Number of pixels along vertical axis
-    n : int, default 3
-        Number of sources
-    c : list, str or matplotlib.colors.Colormap object
-        List of colors or a colormap
+    alpha : float, default 0
+        Start angle [degrees]
 
     """
-    x, y = set_circular_sources(nx, ny, n)
+    n = len(colors)
+    x, y = set_color_sources(n, nx, ny, alpha)
+    x += nx/2
+    y += ny/2
     plt.figure(figsize=(6,5), facecolor="w")
     r = Rectangle((0,0), nx, ny, edgecolor="k", fill=False)
     plt.gca().add_patch(r)
-    if isinstance(c, list):
-        c = ListedColormap(c, "cmap")
-    plt.scatter(x, y, c=np.arange(n), cmap=c, s=100)
+    cmap = ListedColormap(colors, "cmap")
+    plt.scatter(x, y, c=np.arange(n), cmap=cmap, s=100)
     for i in range(n):
         dx = min(nx, ny) / 25
         plt.text(x[i] + dx, y[i], i + 1)
@@ -174,7 +177,7 @@ def get_stepwise_palette(cmap, size=(4,3)):
     return colors
 
 
-def background_gradient(c, fname=None, size=(1280,720), monochrome=None):
+def background_gradient(c, size=(1280,720), alpha=0, show=None, fname=None):
     """
     Draws background based on colors or cmap
 
@@ -197,38 +200,40 @@ def background_gradient(c, fname=None, size=(1280,720), monochrome=None):
 
     """
     epsilon = 1e-5
-    # If monochrome flag not given - autoselect
-    c = c[0] if _is_arraylike(c) and len(c) == 1 else c
-    if monochrome is None:
-        try:
-            cmap = plt.get_cmap(c)
-            bg_color_dict = _get_bgcolor_dict()
-            monochrome = cmap.name in bg_color_dict
-        except:
-            monochrome = not _is_arraylike(c)
-    # Generate 36 colors based on monochrome or color palette
-    if monochrome:
+    # If only one color is given, expand it to darker and lighter
+    if _is_arraylike(c):
+        colors = c
+    else:
         try:
             color = get_bgcolor(c)
         except:
-            color = mc.to_hex(mc.to_rgb(c))
-        colors = [darken(color), darken(color), color, lighten(color)]
-    else:
-        colors = _get_background_palette(c)
-    if len(colors) < 36:
-        cmap = LinearSegmentedColormap.from_list("cmap", colors)
-        colors = cmap(np.linspace(0,1,36))
-    # Generate gradient pixels
-    rgb = np.stack([mc.to_rgb(color) for color in colors]).T
+            color = c
+        colors = [lighten(color), color, darken(color, 0.7), darken(color, 0.7)]
     nx, ny = size
-    x = np.arange(nx)
-    y = np.arange(ny)
+    n = len(colors)
+    # Set color source coordinates
+    x0, y0 = set_color_sources(n, nx, ny, alpha)
+    a0 = np.arctan2(y0, x0)
+    r0 = np.sqrt(x0**2 + y0**2)
+    # Set pixel coordinates
+    x = np.arange(nx) - (nx - 1) / 2
+    y = np.arange(ny) - (ny - 1) / 2
     x, y = np.meshgrid(x, y, indexing="xy")
-    xs = np.stack([x.flatten(), y.flatten()]).T
-    x0 = np.stack(set_circular_sources(nx, ny, len(colors))).T
-    r = np.stack([np.sqrt(np.sum((xs - x_)**2, 1)) for x_ in x0])
-    f = np.power(r + epsilon, -1)
+    x, y = x.flatten(), y.flatten()
+    a = np.arctan2(y, x)
+    r = np.sqrt(x**2 + y**2)
+    # Iterate through color sources
+    dist = []
+    for i in range(n):
+        a_ = a - a0[i]
+        r_ = r * np.cos(a_)
+        d = r0[i] - r_
+        dist.append(d)
+    d = np.stack(dist)
+    f = np.power(d + epsilon, -1.2)
     f = f / np.sum(f, axis=0)
+    # Calc color fractions
+    rgb = np.stack([mc.to_rgb(color) for color in colors]).T
     rgba = [np.dot(rgb[i], f) for i in range(3)] + [np.ones(nx * ny)]
     rgba = np.stack([rgba[i].reshape(ny,nx) for i in range(4)], axis=2)
     rgba = np.clip(255 * rgba, 0, 255).astype(np.uint8)
@@ -237,11 +242,14 @@ def background_gradient(c, fname=None, size=(1280,720), monochrome=None):
         if len(fname) < 5 or fname[-4:] not in [".png", ".jpg", ".svg"]:
             fname = f"{fname}.png"
         img.save(fname)
-    else:
+    if show is None and fname is None:
+        show = True
+    if show == True:
         plt.figure(facecolor="#00000000")
         plt.imshow(img)
         plt.gca().set_axis_off()
         plt.show()
+    plt.close()
     return img
 
 
