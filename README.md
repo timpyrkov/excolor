@@ -5,7 +5,11 @@
 
 # excolors
 
-## Extexnded color utilities for python
+## This package provides utilities for EXtexnded COLOR and colormaps handling in python.
+
+* **New colormaps**. BrBu (Brown-Blue), BrGn (Brown-Green), OrBu (Orange-Blue), OrGn (Orange-Green), PiBu (Pink-Blue), oceanic (Purple-Blue-Green), readthedocs (Blue-Yellow-Green), artdeco, cyberpunk, synthwave, gruvbox for python.
+* **Gradient wallpapers**. Draw gradient wallpapers (based on color or colormap). Draw wallpapers with random patterns based on Perlin noise distortion and shadow effects. Draw low-poly triangle wallpapers with gradient fill and lighting effects (based on colormap or a reference image).
+* **Lighten and darken colors or whole colormpas**. Functions to easily make lighter and darker colors or whole colormaps based on HLS (default) or HSV (optional) color spaces. Functions to easily saturate and desaturate colors or whole colormaps. Functions to easily log-scale colormaps.
 #
 
 # Installation
@@ -14,7 +18,7 @@ pip install excolor
 ```
 
 
-# Extra colormaps
+# Extra colormaps (gruvbox and more)
 
 ```
 import excolor
@@ -24,6 +28,16 @@ cmap
 ```
 
 ![](https://github.com/timpyrkov/excolor/blob/master/img/colormap.png?raw=true)
+
+```
+# """ Show all matplotlib registered colormaps (including the new ones) """
+
+# excolor.list_cmaps()
+```
+
+# Draw gradient wallpaper
+
+
 
 # Colorize black-and-white image
 
