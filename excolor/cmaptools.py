@@ -11,22 +11,22 @@ import matplotlib.colors as mc
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Colormap
 from .colortools import to_hex, show_colors, darken
 from .utils import get_colors, _is_qualitative, _is_divergent, _is_cyclic
-from typing import Union, Tuple
+from typing import Union, Tuple, List, Callable
 
 import warnings
 warnings.filterwarnings("ignore")
 
 
-def _get_cmap_list():
+def _get_cmap_list() -> List[str]:
     """
-    Get a list of all registered colormaps in matplotlib.
+    Helper function to get a list of all registered colormaps in matplotlib.
 
     Returns
     -------
     cmaps : list of str
         List of colormap names
     """
-    cmaps = []
+    cmaps: List[str] = []
     cmaps_r = [cmap for cmap in plt.colormaps() if cmap.endswith('_r')]
     for cmap in plt.colormaps():
         if not cmap in cmaps_r:
@@ -37,10 +37,9 @@ def _get_cmap_list():
     return cmaps
 
 
-
-def _get_cmap_categories(cmap: Union[str, Colormap]) -> str:
+def _get_cmap_categories(cmap: Union[str, Colormap]) -> List[str]:
     """
-    Get the kind of a colormap.
+    Helper function to get the kind of a colormap.
 
     This function determines the kind of a colormap based on its properties.
 
@@ -55,7 +54,7 @@ def _get_cmap_categories(cmap: Union[str, Colormap]) -> str:
         List of kinds of the colormap
     """
     cmap = plt.get_cmap(cmap)
-    categories = []
+    categories: List[str] = []
     if _is_qualitative(cmap):
         categories.append('Qualitative')
     else:
@@ -69,7 +68,7 @@ def _get_cmap_categories(cmap: Union[str, Colormap]) -> str:
 
 def _register_cmap(cmap: Colormap) -> None:
     """
-    Registers a matplotlib colormap in the current session.
+    Helper function to register a matplotlib colormap in the current session.
 
     This function attempts to register a colormap with matplotlib's colormap registry.
     If the colormap is already registered or if registration fails for any reason,
@@ -98,7 +97,7 @@ def _register_cmap(cmap: Colormap) -> None:
 
 def _add_extended_colormaps() -> None:
     """
-    Extends the list of registered colormaps with additional custom colormaps.
+    Helper function to extends the list of registered colormaps.
 
     This function adds a variety of custom colormaps to matplotlib's registry,
     including:
@@ -140,12 +139,15 @@ def _add_extended_colormaps() -> None:
         "OrBu": ["#B97401", "#DC8D01", "#FAC316", "#F8E584", "#F8FFC9", "#638094", "#4C6E83", "#3E596D", "#374053"],
         "OrGn": ["#B97401", "#DC8D01", "#FAC316", "#F8E584", "#F1FFC1", "#7DA4A4", "#628E8E", "#467171", "#284C4C"],
         "PiBu": ["#7D433D", "#A45040", "#C45D47", "#DD6850", "#CAA59F", "#4C8A9A", "#427283", "#385B6C", "#2E4355"],
+        "rtd": ["#206390", "#2980BA", "#419AD5", "#6BB0DE", "#94C6E8", "#FFFFFF", "#EEFFCC", "#DDFF99", "#CCFF66", "#BBFF33"],
         "artdeco": ["#9F1B10", "#D88533", "#E8B055", "#D9B97B", "#B6BEAA", "#768C86", "#365861", "#204755", "#0A3649"],
         "cyberpunk": ["#55D6F5", "#5C9BE8", "#6260DC", "#522FAA", "#42007A", "#4F057A", "#5D097C", "#A917BE", "#F225FF"],
         "synthwave": ["#5C9BE8", "#5368C4", "#4B35A0", "#42007A", "#550584", "#680B8E", "#7B1098", "#A75466", "#D19536", "#FBD606"],
-        "readthedocs": ["#206390", "#2980BA", "#419AD5", "#6BB0DE", "#94C6E8", "#FFFFFF", "#EEFFCC", "#DDFF99"],
         "gruvbox_light": ["#E34039", "#F17626", "#F8B533", "#C4C221", "#87B189", "#57A6A9", "#C284A0"],
         "gruvbox": ["#CC241D", "#D65D0E", "#D79921", "#98971A", "#689D6A", "#458588", "#B16286"],
+        "cobalt": ["#FB94FF", "#FA841A", "#FFC619", "#3AD900", "#0088FF"],
+        "noctis": ["#9F1C17", "#E66533", "#FFC180", "#49E9A6", "#14A5FF"],
+        "monokai": ["#F92672", "#FD971D", "#E69F66", "#E6DB74", "#A6E22E", "#66D9EF", "#AE81FF"],
         "oceanic": ["#7239D2", "#5F52CC", "#4C6CC5", "#3985BF", "#269FB9", "#13B9B2", "#00D2AC"],
     }
     for name, colors in color_dict.items():
@@ -155,7 +157,7 @@ def _add_extended_colormaps() -> None:
             cmap = ListedColormap(colors[::-1], name=name + "_r")
             _register_cmap(cmap)
         except:
-            pass
+           pass
     return
 
 
@@ -188,7 +190,7 @@ def show_colorbar(cmap: Union[str, Colormap]) -> None:
     plt.figure(figsize=(12,2), facecolor="#00000000")
     plt.title(f'{cmap.name}  colorbar', fontsize=20, color="grey", pad=16)
     plt.imshow(gradient, aspect="auto", cmap=cmap)
-    plt.xticks([0, 127, 255], [0, 0.5, 1], fontsize=16, color="grey")
+    plt.xticks([0, 127, 255], ["0", "0.5", "1"], fontsize=16, color="grey")
     plt.yticks([])
     for e in ["top", "bottom", "right", "left"]:
         plt.gca().spines[e].set_color("#00000000")
@@ -234,13 +236,13 @@ def show_cmap(cmap: Union[str, Colormap], verbose: bool = True) -> None:
     colors = get_colors(cmap, exclude_extreme=False)
     colors = [to_hex(c) for c in colors]
     print(f'{len(colors)} sample colors:')
-    show_colors(colors, title=f'{cmap.name}  sample colors')
+    show_colors(colors, title=f'{cmap.name}  sample colors') # type: ignore
     plt.show()
     plt.close()
     if verbose:
         bg_color = get_bgcolor(cmap)
         print(f'Background color: {bg_color}')
-        show_colors([bg_color], f'{cmap.name}  background', size=(2, 1.5))
+        show_colors([bg_color], title=f'{cmap.name}  background', size=(2, 1))
         plt.show()
         plt.close()
     return
@@ -269,8 +271,8 @@ def list_cmaps(category: str = 'All') -> None:
 
     Examples
     --------
-    >>> list_cmaps()  # Just list the colormaps
-    >>> list_cmaps(show=True)  # List and display each colormap
+    >>> list_cmaps()  # List all colormaps
+    >>> list_cmaps("Qualitative")  # List and display each colormap
     """
     # Get sorted list of colormaps
     cmaps = _get_cmap_list()
@@ -401,7 +403,7 @@ def logscale_cmap(cmap: Union[str, Colormap], norders: int = 3) -> Colormap:
     return cmod
 
 
-def get_bgcolor(cmap: Union[str, Colormap]) -> Union[str, Tuple[float, float, float]]:
+def get_bgcolor(cmap: Union[str, Colormap]) -> str:
     """
     Gets background color for a given colormap.
 
@@ -430,21 +432,24 @@ def get_bgcolor(cmap: Union[str, Colormap]) -> Union[str, Tuple[float, float, fl
         "gruvbox": "#1D2021",
         "gruvbox_dark": "#1D2021",
         "gruvbox_light": "#FBF1C7",
+        "cobalt": "#122738",
+        "noctis": "#03181B",
+        "monokai": "#272822",
     }
     if cmap.name in bg_color_dict:
         color = bg_color_dict[cmap.name]
     else:
-        # Get darkest color and darken it by 80%
+        # Get darkest color and darken it by 0.3
         colors = get_colors(cmap)
         h, s, v = np.array([mc.rgb_to_hsv(mc.to_rgb(c)) for c in colors]).T
-        color = colors[np.argmin(v)]
-        color = to_hex(darken(color, 0.8))
+        darkest_color = colors[np.argmin(v)]
+        color: str = darken(darkest_color, 0.3) # type: ignore
     return color
 
 
 """ Aliases for functions """
-list_colormaps = list_cmaps
-show_colormap = show_cmap
+list_colormaps: Callable[..., None] = list_cmaps
+show_colormap: Callable[..., None] = show_cmap
 
 import types
 __all__ = [name for name, thing in globals().items()

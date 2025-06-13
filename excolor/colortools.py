@@ -10,182 +10,19 @@ import pylab as plt
 import colorsys
 from cycler import cycler
 import matplotlib.colors as mc
+from matplotlib import colormaps
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Colormap
 from matplotlib.patches import Rectangle
-from .utils import _is_qualitative, get_colors
+from .utils import  _aspect_ratio, _is_arraylike, _is_rgb, _is_color, _is_cmap
+from .utils import get_colors, _is_qualitative
 from typing import Union, Optional, Tuple, List, Any
 
 import warnings
 warnings.filterwarnings("ignore")
 
 
-def _is_cmap(c: Union[str, Colormap]) -> bool:
-    """
-    Tests if the argument is a valid colormap name or matplotlib.colors.Colormap object.
-
-    This function checks whether the input can be used as a colormap in matplotlib.
-    It accepts both colormap names (strings) and Colormap objects.
-
-    Parameters
-    ----------
-    c : str or matplotlib.colors.Colormap
-        Input to check for colormap validity
-
-    Returns
-    -------
-    bool
-        True if c is a valid colormap name or Colormap object,
-        False otherwise
-
-    Examples
-    --------
-    >>> _is_cmap('viridis')  # True
-    >>> _is_cmap(plt.cm.viridis)  # True
-    >>> _is_cmap('not_a_colormap')  # False
-    >>> _is_cmap(42)  # False
-    """
-    try:
-        is_cmap = False
-        if c is not None and c not in mc.CSS4_COLORS:
-            c = plt.get_cmap(c)
-            is_cmap = True
-    except:
-        is_cmap = False
-    return is_cmap
-
-
-def _is_arraylike(x: Any) -> bool:
-    """
-    Checks if an object is array-like (can be treated as a sequence of elements).
-
-    This function tests whether an object can be treated as an array or sequence,
-    supporting operations like indexing and iteration. It checks for common
-    array-like types in Python and NumPy.
-
-    Parameters
-    ----------
-    x : Any
-        Object to check for array-like properties
-
-    Returns
-    -------
-    bool
-        True if x is array-like (numpy.ndarray, list, tuple, or set),
-        False otherwise
-
-    Examples
-    --------
-    >>> _is_arraylike([1, 2, 3])  # True
-    >>> _is_arraylike(np.array([1, 2, 3]))  # True
-    >>> _is_arraylike((1, 2, 3))  # True
-    >>> _is_arraylike({1, 2, 3})  # True
-    >>> _is_arraylike(42)  # False
-    """
-    mask = isinstance(x, np.ndarray) or isinstance(x, list)
-    mask = mask or isinstance(x, tuple) or isinstance(x, set)
-    return mask
-
-
-def _is_rgb(x: Any) -> bool:
-    """
-    Checks if an object is an RGB or RGBA like array.
-
-    This function tests whether an object can be treated as an RGB or RGBA array.
-
-    Parameters
-    ----------
-    x : Any
-        Object to check for RGB or RGBA properties
-
-    Returns
-    -------
-    bool
-        True if c is an RGB or RGBA array, False otherwise
-
-    Examples
-    --------
-    >>> _is_rgb((1.0, 0.0, 0.0))  # True
-    >>> _is_rgb((1.0, 0.0, 0.0, 1.0))  # True
-    >>> _is_rgb('red')  # False
-    """ 
-    mask = _is_arraylike(x) and len(x) in [3, 4]
-    mask = mask and all([isinstance(x_, float) or isinstance(x_, int) for x_ in x])
-    mask = mask and all([0 <= x_ <= 255 for x_ in x])
-    return mask
-
-
-def _aspect_ratio(length: int, lmin: int = 0) -> Tuple[int, int]:
-    """
-    Calculates the optimal grid dimensions for displaying a sequence of items.
-
-    This function determines the best number of rows and columns to arrange
-    a given number of items in a grid layout, with the goal of creating a
-    visually pleasing aspect ratio close to 5:1 (width:height).
-
-    Parameters
-    ----------
-    length : int
-        Total number of items to arrange in the grid
-    lmin : int, default=0
-        Minimum number of items required to split into multiple rows.
-        If length <= lmin, all items will be placed in a single row.
-
-    Returns
-    -------
-    tuple of int
-        A tuple (n, m) where:
-        - n: Number of columns in the grid
-        - m: Number of rows in the grid
-
-    Notes
-    -----
-    The function:
-    1. Calculates an initial estimate for the number of columns
-    2. Tests various grid configurations around this estimate
-    3. Selects the configuration that:
-       - Minimizes empty spaces
-       - Has an aspect ratio closest to 5:1
-       - Has more columns than rows
-
-    Examples
-    --------
-    >>> _aspect_ratio(12)  # For 12 items
-    (6, 2)  # 6 columns, 2 rows
-    >>> _aspect_ratio(5, lmin=6)  # Few items, below minimum
-    (5, 1)  # Single row
-    """
-    if length > 0:
-        d = np.array([-2, -1, 0, 1, 2])
-        n0 = np.sqrt(length / 2)
-        ns = []
-        ms = []
-        ds = []
-        for s in [4, 5, 6]:
-            n1 = (2 * n0 // s + d).astype(int) * s
-            m1 = np.ceil(length / n1).astype(int)
-            for k in range(len(n1)):
-                if n1[k] > 0 and m1[k] > 0 and n1[k] > m1[k]:
-                    delta = n1[k] * m1[k] - length
-                    if delta >= 0:
-                        ns.append(n1[k])
-                        ms.append(m1[k])
-                        ds.append(delta)
-        mask = np.array(ds) == min(ds)
-        ns = np.array(ns)[mask]
-        ms = np.array(ms)[mask]
-        idx = np.argmin(np.abs(ns / ms - 5))
-        n, m = ns[idx], ms[idx]
-        if isinstance(n, np.ndarray):
-            n, m = n[0], m[0]
-        if length <= lmin or n > length:
-            n = length
-    else:
-        n, m = 0, 0
-    return n, m
-
-
 def show_colors(
-    c: Union[Colormap, str, List[str], Tuple[float, ...], List[Tuple[float, ...]]] = None,
+    c: Optional[Union[Colormap, str, List[str], Tuple[float, ...], List[Tuple[float, ...]]]] = None,
     names: Optional[List[str]] = None,
     title: str = "",
     size: Optional[Tuple[int, int]] = None,
@@ -193,7 +30,7 @@ def show_colors(
     verbose: bool = True
 ) -> None:
     """
-    Displays a set of colors in a grid layout with their hex values.
+    Displays a set of colors as a grid layout with color names.
 
     This function creates a visualization of colors, either from a list, a single color,
     or a colormap. The colors are displayed in a grid with their hex values, and the
@@ -206,7 +43,7 @@ def show_colors(
         - A colormap name or instance
         - A single color str or rgb tuple
         - A list of colors str or rgb tuples
-        If None, the matplotlib default color palettes will be used.
+        If None, the matplotlib default color palettes will be shown.
     names : list of str, optional
         List of color names. If not provided, the hex values will be used.
     title : str, default=''
@@ -230,12 +67,6 @@ def show_colors(
     >>> show_colors('viridis', size=(10, 5))  # Custom size
     >>> show_colors(None)  # Display matplotlib default color palettes
     """
-    if c is None:
-        list_colors()
-        return
-    if _is_arraylike(c) and len(c) == 0:
-        list_colors()
-        return
     def _to_255(x):
         x255 = tuple([int(np.round(x_ * 255)) for x_ in x])
         return x255
@@ -243,30 +74,46 @@ def show_colors(
         name = [f'{int(np.round(x_ * 255)):3d}' for x_ in x]
         name = '  ' + ' '.join(name)
         return name
-    try:
-        c = plt.get_cmap(c)
+    # If None or empty list, show default colors
+    if c is None:
+        list_colors()
+        return
+    if _is_arraylike(c) and len(c) == 0:
+        list_colors()
+        return
+    # Type-safe color extraction
+    colors: List[Union[str, Tuple[float, ...]]]
+    # If c is a colormap, extract colors
+    if _is_cmap(c):
         colors = get_colors(c, exclude_extreme=False)
-        title = c.name
-    except:
-        colors = c if _is_arraylike(c) and not _is_rgb(c) else [c]
+        colormap_title = cmap.name
+    # If color or list of colors, convert to list
+    elif _is_arraylike(c) and not _is_rgb(c):
+        colors = c
+    elif _is_color(c):
+        colors = [c]
+    else:
+        raise ValueError("Input must be a colormap, a color name, or a list of colors.")
+    # Convert colors to RGB tuples
     rgbcolors = [to_rgb(color) for color in colors]
+    # Format color names
     if fmt == 'hex':
         colors = [to_hex(color) for color in colors]
         cnames = colors
     elif fmt == 'rgb':
         colors = rgbcolors
-        cnames = [_to_name(color) for color in colors]
+        cnames = [_to_name(color) for color in colors if isinstance(color, tuple)]
     elif fmt == 'hsv':
-        colors = [colorsys.rgb_to_hsv(*to_rgb(color)) for color in colors]
-        cnames = [_to_name(color) for color in colors]
+        colors = [colorsys.rgb_to_hsv(*color) for color in rgbcolors]
+        cnames = [_to_name(color) for color in rgbcolors if isinstance(color, tuple)]
     elif fmt == 'hsl':
-        colors = [colorsys.rgb_to_hls(*to_rgb(color)) for color in colors]
-        cnames = [_to_name(color) for color in colors]
+        colors = [colorsys.rgb_to_hls(*color) for color in rgbcolors]
+        cnames = [_to_name(color) for color in rgbcolors if isinstance(color, tuple)]
     if verbose:
         if fmt == 'hex':
             print(colors)
         else:
-            print([_to_255(color) for color in colors])
+            print([_to_255(color) for color in rgbcolors])
     d = 0.05
     width = 1 - 2 * d
     if size is None:
@@ -274,11 +121,11 @@ def show_colors(
         size = (2*n+4,2*m)
     else:
         n, m = size
-        m = np.ceil(len(rgbcolors) / n)
+        m = int(np.ceil(len(rgbcolors) / n))
         size = (2*n+4,2*m)
     fontsize = 12 if size[1] < 2 else 28
     plt.figure(figsize=size, facecolor="#00000000")
-    plt.title(title, fontsize=fontsize, color="grey")
+    plt.title(colormap_title, fontsize=fontsize, color="grey")
     for k, rgb in enumerate(rgbcolors):
         i = k % n
         j = k // n
@@ -289,8 +136,10 @@ def show_colors(
             h, l, s = to_hls(rgb)
             fontcolor = "white" if v < 0.4 or l < 0.3 else "black"
             x, y = i + 0.55 - 2 * d, -j - 0.5
-            name = names[k] if names is not None else cnames[k]
-            plt.text(x, y, name, fontsize=20, color=fontcolor, ha="center", va="center")
+            name = names[k] if names is not None and k < len(names) else (cnames[k] if k < len(cnames) else "")
+            if name is None:
+                name = ""
+            plt.text(x, y, str(name), fontsize=20, color=fontcolor, ha="center", va="center")
     plt.xlim(-d, n - d)
     plt.ylim(-m + d, d)
     plt.gca().set_axis_off()
@@ -300,9 +149,9 @@ def show_colors(
     return
 
 
-def list_colors():
+def list_colors() -> None:
     """
-    Displays a list of colors in a grid layout with their hex values.
+    Displays a list of default colors as a grid layout with their names.
 
     This function creates a visualization of colors, either from a dictionary,
     or from the default color palettes. The colors are displayed in a grid with
@@ -388,7 +237,7 @@ def list_colors():
 
 def set_color_cycler(c: Union[List[str], str, Colormap], n: int = 3) -> None:
     """
-    Sets the color cycler for the current matplotlib axis.
+    Sets the color cycler for matplotlib.
 
     This function configures the color cycling behavior for the current matplotlib
     axis using either a list of colors or a colormap. The colors will be used in
@@ -417,11 +266,15 @@ def set_color_cycler(c: Union[List[str], str, Colormap], n: int = 3) -> None:
     >>> plt.plot(x2, y2)  # Will use second color
     """
     try:
-        c = plt.get_cmap(c)
-        colors = get_colors(c, n, exclude_extreme=True)
+        if isinstance(c, str):
+            c = colormaps[c]
+        if isinstance(c, Colormap):
+            colors = get_colors(c, n, exclude_extreme=True)
+        else:
+            colors = c
+        plt.gca().set_prop_cycle(cycler(color=colors))
     except:
-        colors = c if _is_arraylike(c) and not _is_rgb(c) else None
-    plt.gca().set_prop_cycle(cycler(color=colors))
+        raise ValueError("Invalid color input. Must be a list of colors, a colormap name, or a Colormap instance.")
     return
 
 
@@ -430,9 +283,9 @@ def lighten(
     factor: float = 0.1,
     keep_alpha: bool = False,
     mode: str = 'hls'
-) -> Union[str, List[str], Tuple[float, ...], List[Tuple[float, ...]]]:
+) -> Union[str, List[str], Tuple[float, ...], List[Tuple[float, ...]], Colormap, ListedColormap, LinearSegmentedColormap, None]:
     """
-    Lightens colors or a colormap by adjusting their lightness.
+    Lightens color(s) or a colormap by increasing lightness.
 
     This function takes colors or a colormap and returns lighter versions by
     increasing their lightness in HLS color space. 
@@ -468,13 +321,15 @@ def lighten(
         raise ValueError("mode must be 'hls' or 'hsv'")
     factor = np.clip(factor, 0, 1)
     try:
+        colors = None
+        category = None
         if _is_cmap(c):
-            c = plt.get_cmap(c)
+            if isinstance(c, str):
+                c = colormaps[c]
             colors = get_colors(c, exclude_extreme=False)
             if not _is_qualitative(c):
                 colors = get_colors(c, 256, exclude_extreme=False)
-            category = 'cmap'
-            print(category)
+            category = "cmap"
         elif _is_arraylike(c) and not _is_rgb(c):
             colors = c
             category = 'hex' if isinstance(c[0], str) else 'rgb'
@@ -507,7 +362,8 @@ def lighten(
                 rgb = rgb + (hls[3],) if hls.shape[0] == 4 else rgb
                 rgb = tuple([float(np.round(x, 3)) for x in rgb])
             if category == 'hex':
-                colors = to_hex(rgb, keep_alpha=keep_alpha).upper()
+                hexval = to_hex(rgb, keep_alpha=keep_alpha)
+                colors = hexval.upper() if hexval is not None else None
             else:
                 colors = to_rgb(rgb, keep_alpha=keep_alpha)
         except:
@@ -520,9 +376,9 @@ def darken(
     factor: float = 0.1,
     keep_alpha: bool = False,
     mode: str = 'hls'
-) -> Union[str, List[str], Tuple[float, ...], List[Tuple[float, ...]]]:
+) -> Union[str, List[str], Tuple[float, ...], List[Tuple[float, ...]], Colormap, ListedColormap, LinearSegmentedColormap, None]:
     """
-    Darkens colors or a colormap by adjusting their lightness.
+    Darkens color(s) or a colormap by decreasing lightness.
 
     This function takes colors or a colormap and returns darker versions by
     decreasing their lightness in HLS color space. 
@@ -558,12 +414,15 @@ def darken(
         raise ValueError("mode must be 'hls' or 'hsv'")
     factor = np.clip(factor, 0, 1)
     try:
+        colors = None
+        category = None
         if _is_cmap(c):
-            c = plt.get_cmap(c)
+            if isinstance(c, str):
+                c = colormaps[c]
             colors = get_colors(c, exclude_extreme=False)
             if not _is_qualitative(c):
                 colors = get_colors(c, 256, exclude_extreme=False)
-            category = 'cmap'
+            category = "cmap"
         elif _is_arraylike(c) and not _is_rgb(c):
             colors = c
             category = 'hex' if isinstance(c[0], str) else 'rgb'
@@ -595,7 +454,8 @@ def darken(
                 rgb = colorsys.hls_to_rgb(*hls[:3])
                 rgb = rgb + (hls[3],) if hls.shape[0] == 4 else rgb
             if category == 'hex':
-                colors = to_hex(rgb, keep_alpha=keep_alpha).upper()
+                hexval = to_hex(rgb, keep_alpha=keep_alpha)
+                colors = hexval.upper() if hexval is not None else None
             else:
                 colors = to_rgb(rgb, keep_alpha=keep_alpha)
         except:
@@ -608,9 +468,9 @@ def saturate(
     factor: float = 0.1,
     keep_alpha: bool = False,
     mode: str = 'hls'
-) -> Union[str, List[str], Tuple[float, ...], List[Tuple[float, ...]]]:
+) -> Union[str, List[str], Tuple[float, ...], List[Tuple[float, ...]], Colormap, ListedColormap, LinearSegmentedColormap, None]:
     """
-    Saturates colors or a colormap by adjusting their saturation.
+    Saturates color(s) or a colormap by increasing saturation.
 
     This function takes colors or a colormap and returns more saturated versions by
     increasing their saturation in HLS color space. 
@@ -646,12 +506,15 @@ def saturate(
         raise ValueError("mode must be 'hls' or 'hsv'")
     factor = np.clip(factor, 0, 1)
     try:
+        colors = None
+        category = None
         if _is_cmap(c):
-            c = plt.get_cmap(c)
+            if isinstance(c, str):
+                c = colormaps[c]
             colors = get_colors(c, exclude_extreme=False)
             if not _is_qualitative(c):
                 colors = get_colors(c, 256, exclude_extreme=False)
-            category = 'cmap'
+            category = "cmap"
         elif _is_arraylike(c) and not _is_rgb(c):
             colors = c
             category = 'hex' if isinstance(c[0], str) else 'rgb'
@@ -683,7 +546,8 @@ def saturate(
                 rgb = colorsys.hls_to_rgb(*hls[:3])
                 rgb = rgb + (hls[3],) if hls.shape[0] == 4 else rgb
             if category == 'hex':
-                colors = to_hex(rgb, keep_alpha=keep_alpha).upper()
+                hexval = to_hex(rgb, keep_alpha=keep_alpha)
+                colors = hexval.upper() if hexval is not None else None
             else:
                 colors = to_rgb(rgb, keep_alpha=keep_alpha)
         except:
@@ -696,9 +560,9 @@ def desaturate(
     factor: float = 0.1,
     keep_alpha: bool = False,
     mode: str = 'hls'
-) -> Union[str, List[str], Tuple[float, ...], List[Tuple[float, ...]]]:
+) -> Union[str, List[str], Tuple[float, ...], List[Tuple[float, ...]], Colormap, ListedColormap, LinearSegmentedColormap, None]:
     """
-    Desaturates colors or a colormap by adjusting their saturation.
+    Desaturates color(s) or a colormap by decreasing saturation.
 
     This function takes colors or a colormap and returns less saturated versions by
     decreasing their saturation in HLS color space. 
@@ -734,12 +598,15 @@ def desaturate(
         raise ValueError("mode must be 'hls' or 'hsv'")
     factor = np.clip(factor, 0, 1)
     try:
+        colors = None
+        category = None
         if _is_cmap(c):
-            c = plt.get_cmap(c)
+            if isinstance(c, str):
+                c = colormaps[c]
             colors = get_colors(c, exclude_extreme=False)
             if not _is_qualitative(c):
                 colors = get_colors(c, 256, exclude_extreme=False)
-            category = 'cmap'
+            category = "cmap"
         elif _is_arraylike(c) and not _is_rgb(c):
             colors = c
             category = 'hex' if isinstance(c[0], str) else 'rgb'
@@ -771,7 +638,8 @@ def desaturate(
                 rgb = colorsys.hls_to_rgb(*hls[:3])
                 rgb = rgb + (hls[3],) if hls.shape[0] == 4 else rgb
             if category == 'hex':
-                colors = to_hex(rgb, keep_alpha=keep_alpha).upper()
+                hexval = to_hex(rgb, keep_alpha=keep_alpha)
+                colors = hexval.upper() if hexval is not None else None
             else:
                 colors = to_rgb(rgb, keep_alpha=keep_alpha)
         except:
@@ -779,7 +647,7 @@ def desaturate(
     return colors
 
 
-def to_hex(c: Union[str, Tuple[float, ...]], keep_alpha: bool = False, safe: bool = False) -> str:
+def to_hex(c: Union[str, Tuple[float, ...]], keep_alpha: bool = False, safe: bool = False) -> Optional[str]:
     """
     Converts a color to its hexadecimal representation.
 

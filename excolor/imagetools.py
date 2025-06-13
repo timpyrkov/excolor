@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore")
 
 def _to_prime_factors(n: int) -> List[int]:
     """
-    Decomposes an integer into its prime factors.
+    Helper function to decomposes an integer into its prime factors.
 
     This function takes an integer and returns a list of its prime factors.
     It uses trial division to find the prime factors.
@@ -59,7 +59,7 @@ def _to_prime_factors(n: int) -> List[int]:
 
 def _to_combinations(x: List[int]) -> List[List[int]]:
     """
-    Generates all combinations of a list of integers.
+    Helper function to generate all combinations of a list of integers.
 
     This function takes a list of integers and returns all possible combinations
     of the integers. It uses a recursive approach to generate all combinations.
@@ -87,9 +87,9 @@ def _to_combinations(x: List[int]) -> List[List[int]]:
     return comb
 
 
-def _find_common_divisors(x: int, y: int) -> List[int]:
+def _find_common_divisors(x: int, y: int) -> np.ndarray:
     """
-    Finds all common divisors of two integers.
+    Helper function to find all common divisors of two integers.
 
     This function takes two integers and returns a list of their common divisors.
     It uses trial division to find the common divisors.
@@ -242,7 +242,7 @@ def load_image(fname: str) -> Image.Image:
 
 def img2arr(img: Image.Image) -> np.ndarray:
     """
-    Convert a PIL Image to a numpy array.
+    Converts a PIL Image to a numpy array.
 
     Notes
     -----
@@ -273,7 +273,7 @@ def img2arr(img: Image.Image) -> np.ndarray:
 
 def arr2img(arr: np.ndarray) -> Image.Image:
     """
-    Convert a numpy array to a PIL Image.
+    Converts a numpy array to a PIL Image.
 
     Notes
     -----
@@ -301,7 +301,7 @@ def arr2img(arr: np.ndarray) -> Image.Image:
 
 def mask2img(mask: np.ndarray) -> Image.Image:
     """
-    Convert a binary numpy array to a PIL Image.
+    Converts a binary numpy array to a PIL Image.
 
     Notes
     -----
@@ -325,7 +325,7 @@ def mask2img(mask: np.ndarray) -> Image.Image:
 
 def fig2img(fig: Optional[Figure] = None) -> Image.Image:
     """
-    Convert a Matplotlib figure to a PIL Image and return it
+    Converts a Matplotlib figure to a PIL Image and return it
 
     Parameters
     ----------
@@ -348,7 +348,7 @@ def fig2img(fig: Optional[Figure] = None) -> Image.Image:
 
 def fig2img_from_canvas(fig: Optional[Figure] = None) -> Image.Image:
     """
-    Convert a Matplotlib figure to a PIL Image from the canvas and return it
+    Converts a Matplotlib figure to a PIL Image from the canvas and return it
 
     Parameters
     ----------
@@ -370,7 +370,7 @@ def fig2img_from_canvas(fig: Optional[Figure] = None) -> Image.Image:
 
 def add_layer(fig: Figure, size: Tuple[int, int], layer: Image.Image, start: Tuple[int, int] = (0, 0)) -> None:
     """
-    Add a layer to an image using plt.imshow().
+    Adds a layer to an image using plt.imshow().
 
     Parameters
     ----------
@@ -399,7 +399,7 @@ def add_layer(fig: Figure, size: Tuple[int, int], layer: Image.Image, start: Tup
 
 def _find_midpoint(data: np.ndarray) -> np.ndarray:
     """
-    Identifies midpoint in a distribution of color intensities.
+    Helper function to identify midpoint in a distribution of color intensities.
 
     This function analyzes a distribution of color intensities to find 
     midpoint. Uses a multi-scale approach with adaptive window size.
@@ -433,7 +433,6 @@ def _find_midpoint(data: np.ndarray) -> np.ndarray:
     peaks = np.arange(2)
     midpoint = 0.5
     for window in windows:
-        print(window)
         w = np.hanning(max(1, window))
         smooth = np.convolve(hist, w/np.sum(w), mode="same")
         smooth = smooth * np.sum(hist) / np.sum(smooth)
