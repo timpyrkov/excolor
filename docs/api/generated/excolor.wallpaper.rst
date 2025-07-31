@@ -1,16 +1,21 @@
-excolor.wallpaper
+﻿excolor.wallpaper
 =================
 
-.. automodule:: excolor.wallpaper
+.. currentmodule:: excolor
 
-   
-   .. rubric:: Functions
+.. automodule:: wallpaper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
+   :inherited-members:
 
-   .. autosummary::
-   
-      gradient_wallpaper
-      perlin_lines
-      perlin_wallpaper
-      sigmoid_wallpaper
-      triangle_wallpaper
-   
+.. autofunction:: excolor.wallpaper.sigmoid_wallpaper
+
+.. autofunction:: excolor.wallpaper.perlin_wallpaper
+
+.. autofunction:: excolor.wallpaper.perlin_lines
+
+.. autofunction:: excolor.wallpaper.gradient_wallpaper
+
+.. autofunction:: excolor.wallpaper.triangle_wallpaper

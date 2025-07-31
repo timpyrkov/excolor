@@ -8,10 +8,11 @@ This module contains functions to convert color to a palette of darker shades an
 import re
 import math
 import numpy as np
-import pylab as plt
+import matplotlib.pyplot as plt
 import colorsys
 from cycler import cycler
 import matplotlib.colors as mc
+from matplotlib.axes import Axes
 from typing import Any, Optional
 from .colortypes import to_hex, to_rgb, to_hls, to_oklch, to_rgb255
 from .utils import get_colors, get_color_name, interpolate_colors

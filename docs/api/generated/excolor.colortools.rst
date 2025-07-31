@@ -1,18 +1,25 @@
-excolor.colortools
+﻿excolor.colortools
 ==================
 
-.. automodule:: excolor.colortools
+.. currentmodule:: excolor
 
-   
-   .. rubric:: Functions
+.. automodule:: colortools
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
+   :inherited-members:
 
-   .. autosummary::
-   
-      darken
-      desaturate
-      lighten
-      list_colors
-      saturate
-      set_color_cycler
-      show_colors
-   
+.. autofunction:: excolor.colortools.show_colors
+
+.. autofunction:: excolor.colortools.list_colors
+
+.. autofunction:: excolor.colortools.set_color_cycler
+
+.. autofunction:: excolor.colortools.lighten
+
+.. autofunction:: excolor.colortools.darken
+
+.. autofunction:: excolor.colortools.saturate
+
+.. autofunction:: excolor.colortools.desaturate

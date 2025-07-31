@@ -6,11 +6,12 @@ This module contains functions to create wallpaper-like images.
 """
 
 import numpy as np
-import pylab as plt
+import matplotlib.pyplot as plt
 from PIL import Image
 import matplotlib.colors as mc
 from pythonperlin import perlin
 from matplotlib.colors import LinearSegmentedColormap, Colormap
+from matplotlib.axes import Axes
 from typing import Union, Tuple, List, Optional, Any
 from .patch import Patch
 from .cmaptools import get_bgcolor

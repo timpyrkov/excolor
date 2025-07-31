@@ -7,14 +7,14 @@ This module contains functions to create patches.
 
 import numpy as np
 import cv2 
-import pylab as plt
+import matplotlib.pyplot as plt
 from PIL import Image
 from matplotlib.figure import Figure
 from matplotlib.colors import Colormap
+from matplotlib.axes import Axes
 from typing import List, Tuple, Union, Optional
 from .gradient import fill_gradient
-from .colortools import lighten, darken
-from .colortypes import _is_arraylike, to_rgb
+from .colortypes import to_rgb
 from .imagetools import pixels_to_size_and_dpi, remove_margins, add_layer
 from .imagetools import fig2img, img2arr, arr2img, mask2img
 

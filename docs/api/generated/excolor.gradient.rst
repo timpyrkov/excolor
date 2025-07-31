@@ -1,13 +1,15 @@
-excolor.gradient
+﻿excolor.gradient
 ================
 
-.. automodule:: excolor.gradient
+.. currentmodule:: excolor
 
-   
-   .. rubric:: Functions
+.. automodule:: gradient
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
+   :inherited-members:
 
-   .. autosummary::
-   
-      fill_gradient
-      show_gradient_sources
-   
+.. autofunction:: excolor.gradient.show_gradient_sources
+
+.. autofunction:: excolor.gradient.fill_gradient

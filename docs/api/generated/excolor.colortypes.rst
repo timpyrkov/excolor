@@ -1,31 +1,49 @@
-excolor.colortypes
+﻿excolor.colortypes
 ==================
 
-.. automodule:: excolor.colortypes
+.. currentmodule:: excolor
 
-   
-   .. rubric:: Functions
+.. automodule:: colortypes
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
+   :inherited-members:
 
-   .. autosummary::
-   
-      convert_lists
-      hex_to_rgb
-      hls_to_rgb
-      hsl_to_rgb
-      hsv_to_rgb
-      oklch_to_rgb
-      rgb255_to_rgb
-      rgb_to_hex
-      rgb_to_hls
-      rgb_to_hsl
-      rgb_to_hsv
-      rgb_to_oklch
-      rgb_to_rgb255
-      to_hex
-      to_hls
-      to_hsl
-      to_hsv
-      to_oklch
-      to_rgb
-      to_rgb255
-   
+.. autofunction:: excolor.colortypes.to_rgb
+
+.. autofunction:: excolor.colortypes.to_rgb255
+
+.. autofunction:: excolor.colortypes.to_hex
+
+.. autofunction:: excolor.colortypes.to_hls
+
+.. autofunction:: excolor.colortypes.to_hsl
+
+.. autofunction:: excolor.colortypes.to_hsv
+
+.. autofunction:: excolor.colortypes.to_oklch
+
+.. autofunction:: excolor.colortypes.hex_to_rgb
+
+.. autofunction:: excolor.colortypes.rgb_to_hex
+
+.. autofunction:: excolor.colortypes.rgb255_to_rgb
+
+.. autofunction:: excolor.colortypes.rgb_to_rgb255
+
+.. autofunction:: excolor.colortypes.hls_to_rgb
+
+.. autofunction:: excolor.colortypes.rgb_to_hls
+
+.. autofunction:: excolor.colortypes.hsl_to_rgb
+
+.. autofunction:: excolor.colortypes.rgb_to_hsl
+
+.. autofunction:: excolor.colortypes.hsv_to_rgb
+
+.. autofunction:: excolor.colortypes.rgb_to_hsv
+
+.. autofunction:: excolor.colortypes.oklch_to_rgb
+
+.. autofunction:: excolor.colortypes.rgb_to_oklch

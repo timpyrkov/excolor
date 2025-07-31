@@ -8,10 +8,11 @@ This module contains functions to manipulate images.
 import io
 import requests
 import numpy as np
-import pylab as plt
+import matplotlib.pyplot as plt
 from PIL import Image
 from matplotlib.figure import Figure
 import matplotlib.colors as mc
+from matplotlib.axes import Axes
 from typing import List, Callable, Tuple, Optional
 
 import warnings

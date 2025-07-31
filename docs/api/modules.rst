@@ -1,8 +1,16 @@
 API Reference
 =============
 
-.. autosummary::
-   :toctree: generated
-   :recursive:
+.. toctree::
+   :maxdepth: 2
+   :caption: Modules
 
-   excolor
+   generated/excolor.colortools
+   generated/excolor.colortypes
+   generated/excolor.palette
+   generated/excolor.cmaptools
+   generated/excolor.imagetools
+   generated/excolor.wallpaper
+   generated/excolor.patch
+   generated/excolor.gradient
+   generated/excolor.utils

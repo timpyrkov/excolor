@@ -6,10 +6,11 @@ This module contains functions to manipulate gradients.
 """
 
 import numpy as np
-import pylab as plt
+import matplotlib.pyplot as plt
 import matplotlib.colors as mc
 from matplotlib.colors import ListedColormap, Colormap
 from matplotlib.patches import Rectangle
+from matplotlib.axes import Axes
 from .colortools import lighten, darken
 from .colortypes import _get_color_type
 from .cmaptools import get_bgcolor

@@ -1,24 +1,35 @@
-excolor.imagetools
+﻿excolor.imagetools
 ==================
 
-.. automodule:: excolor.imagetools
+.. currentmodule:: excolor
 
-   
-   .. rubric:: Functions
+.. automodule:: imagetools
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
+   :inherited-members:
 
-   .. autosummary::
-   
-      add_layer
-      arr2img
-      colorize_image
-      fig2img
-      fig2img_from_canvas
-      grayscale_image
-      greyscale_image
-      img2arr
-      load_image
-      mask2img
-      pixels_to_size_and_dpi
-      remove_margins
-      resize_image
-   
+.. autofunction:: excolor.imagetools.pixels_to_size_and_dpi
+
+.. autofunction:: excolor.imagetools.remove_margins
+
+.. autofunction:: excolor.imagetools.load_image
+
+.. autofunction:: excolor.imagetools.img2arr
+
+.. autofunction:: excolor.imagetools.arr2img
+
+.. autofunction:: excolor.imagetools.mask2img
+
+.. autofunction:: excolor.imagetools.fig2img
+
+.. autofunction:: excolor.imagetools.fig2img_from_canvas
+
+.. autofunction:: excolor.imagetools.add_layer
+
+.. autofunction:: excolor.imagetools.colorize_image
+
+.. autofunction:: excolor.imagetools.resize_image
+
+.. autofunction:: excolor.imagetools.greyscale_image

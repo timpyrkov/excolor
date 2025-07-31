@@ -1,12 +1,16 @@
-excolor.patch
+﻿excolor.patch
 =============
 
-.. automodule:: excolor.patch
+.. currentmodule:: excolor
 
-   
-   .. rubric:: Classes
+.. automodule:: patch
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
+   :inherited-members:
 
-   .. autosummary::
-   
-      Patch
-   
+.. autoclass:: excolor.patch.Patch
+   :members:
+   :show-inheritance:
+   :special-members: __init__

@@ -6,9 +6,10 @@ This module contains functions to manipulate colormaps.
 """
 
 import numpy as np
-import pylab as plt
+import matplotlib.pyplot as plt
 import matplotlib.colors as mc
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Colormap
+from matplotlib.axes import Axes
 from .colortypes import to_hex, to_rgb
 from .colortools import show_colors, darken
 from .utils import get_colors, _is_qualitative, _is_divergent, _is_cyclic

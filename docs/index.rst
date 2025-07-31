@@ -14,7 +14,17 @@ Extended color utilities for python.
    :caption: Examples
 
    notebooks/examples
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Image Tools
+
    notebooks/imagetools
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Wallpapers
+
    notebooks/wallpapers
 
 .. toctree::

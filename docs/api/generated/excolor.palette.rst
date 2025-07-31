@@ -1,16 +1,21 @@
-excolor.palette
+﻿excolor.palette
 ===============
 
-.. automodule:: excolor.palette
+.. currentmodule:: excolor
 
-   
-   .. rubric:: Functions
+.. automodule:: palette
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
+   :inherited-members:
 
-   .. autosummary::
-   
-      generate_background_palette
-      generate_foreground_palette
-      generate_palette
-      generate_primary_palette
-      generate_stepwise_palette
-   
+.. autofunction:: excolor.palette.generate_palette
+
+.. autofunction:: excolor.palette.generate_primary_palette
+
+.. autofunction:: excolor.palette.generate_background_palette
+
+.. autofunction:: excolor.palette.generate_foreground_palette
+
+.. autofunction:: excolor.palette.generate_stepwise_palette

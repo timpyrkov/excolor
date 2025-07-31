@@ -1,14 +1,17 @@
-excolor.utils
+﻿excolor.utils
 =============
 
-.. automodule:: excolor.utils
+.. currentmodule:: excolor
 
-   
-   .. rubric:: Functions
+.. automodule:: utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
+   :inherited-members:
 
-   .. autosummary::
-   
-      get_color_name
-      get_colors
-      interpolate_colors
-   
+.. autofunction:: excolor.utils.get_color_name
+
+.. autofunction:: excolor.utils.get_colors
+
+.. autofunction:: excolor.utils.interpolate_colors

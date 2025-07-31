@@ -9,11 +9,15 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
+
+
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
+import os
+import sys
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
@@ -28,12 +32,50 @@ author = 'Tim Pyrkov'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-	'sphinx.ext.autodoc', 
-	'sphinx.ext.autosummary',
-	'sphinx.ext.coverage', 
-	'sphinx.ext.napoleon',
-	'sphinx.ext.viewcode',
-	'nbsphinx',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.coverage',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.viewcode',
+    'nbsphinx',
+    'sphinx.ext.intersphinx',
+]
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+}
+
+autosummary_generate = True
+
+# Autodoc configuration for detailed function documentation
+autodoc_default_options = {
+    'members': True,
+    'member-order': 'bysource',
+    'special-members': '__init__',
+    'undoc-members': True,
+    'exclude-members': '__weakref__',
+    'show-inheritance': True,
+    'inherited-members': True,
+}
+
+# Enable detailed function signatures
+autodoc_typehints = 'description'
+autodoc_typehints_format = 'short'
+autodoc_preserve_defaults = True
+
+autodoc_mock_imports = [
+    'cv2',
+    'matplotlib',
+    'numpy',
+    'pandas',
+    'PIL',
+    'requests',
+    'scipy',
+    'seaborn',
+    'skimage',
+    'pythonperlin',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -51,8 +93,13 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # a list of builtin themes.
 #
 html_theme = 'sphinx_rtd_theme'
+html_logo = 'logo/logo.png'
 pygments_style = 'sphinx'
-html_theme_options = {}
+html_theme_options = {
+    'logo_only': True,
+    'display_version': False,
+}
+
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

@@ -8,13 +8,13 @@ This module contains functions to manipulate colors.
 import os
 import colorsys
 import numpy as np
-import pandas as pd
-import pylab as plt
+import matplotlib.pyplot as plt
 from cycler import cycler
 import matplotlib.colors as mc
 from matplotlib import colormaps
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Colormap
 from matplotlib.patches import Rectangle
+from matplotlib.axes import Axes
 from .utils import _aspect_ratio, _is_cmap
 from .palette import generate_stepwise_palette
 from .colortypes import _is_arraylike, _get_color_type, _is_color, _is_rgb

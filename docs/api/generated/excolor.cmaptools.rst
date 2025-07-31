@@ -1,35 +1,39 @@
-excolor.cmaptools
+﻿excolor.cmaptools
 =================
 
-.. automodule:: excolor.cmaptools
+.. currentmodule:: excolor
 
-   
-   .. rubric:: Functions
+.. automodule:: cmaptools
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
+   :inherited-members:
 
-   .. autosummary::
-   
-      get_bgcolor
-      list_cmaps
-      list_colormaps
-      list_continuous_cmaps
-      list_continuous_colormaps
-      list_cyclic_cmaps
-      list_cyclic_colormaps
-      list_divergent_cmaps
-      list_divergent_colormaps
-      list_qualitative_cmaps
-      list_qualitative_colormaps
-      logscale_cmap
-      show_cmap
-      show_cmaps
-      show_colorbar
-      show_colormap
-      show_continuous_cmaps
-      show_continuous_colormaps
-      show_cyclic_cmaps
-      show_cyclic_colormaps
-      show_divergent_cmaps
-      show_divergent_colormaps
-      show_qualitative_cmaps
-      show_qualitative_colormaps
-   
+.. autofunction:: excolor.cmaptools.show_colorbar
+
+.. autofunction:: excolor.cmaptools.show_cmap
+
+.. autofunction:: excolor.cmaptools.list_cmaps
+
+.. autofunction:: excolor.cmaptools.list_qualitative_cmaps
+
+.. autofunction:: excolor.cmaptools.list_continuous_cmaps
+
+.. autofunction:: excolor.cmaptools.list_divergent_cmaps
+
+.. autofunction:: excolor.cmaptools.list_cyclic_cmaps
+
+.. autofunction:: excolor.cmaptools.logscale_cmap
+
+.. autofunction:: excolor.cmaptools.get_bgcolor
+
+.. autofunction:: excolor.cmaptools.show_cmaps
+
+.. autofunction:: excolor.cmaptools.show_qualitative_cmaps
+
+.. autofunction:: excolor.cmaptools.show_continuous_cmaps
+
+.. autofunction:: excolor.cmaptools.show_divergent_cmaps
+
+.. autofunction:: excolor.cmaptools.show_cyclic_cmaps
