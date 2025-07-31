@@ -28,7 +28,7 @@ cmap = plt.get_cmap("gruvbox")
 cmap
 ```
 
-`Gruvbox`
+`Gruvbox`<br>
 ![](https://github.com/timpyrkov/excolor/blob/master/img/colormap.png?raw=true)
 
 # Generate color palettes
@@ -44,7 +44,7 @@ colors = excolor.generate_palette(color, mode='superellipse', power=3)
 excolor.show_colors(colors)
 ```
 
-`['#FFFFFF', '#CFF4F6', '#A7DBDE', '#84C0C3', '#63A3A6', '#458588', '#296568', '#114547', '#002224', '#000000']`
+`['#FFFFFF', '#CFF4F6', '#A7DBDE', '#84C0C3', '#63A3A6', '#458588', '#296568', '#114547', '#002224', '#000000']`<br>
 ![](https://github.com/timpyrkov/excolor/blob/master/img/palette.png?raw=true)
 
 ```
