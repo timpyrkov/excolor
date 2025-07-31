@@ -408,6 +408,8 @@ def perlin_wallpaper(
             background = background.resize(size)
         # Flip vertically
         background = background.transpose(Image.FLIP_TOP_BOTTOM)
+    elif isinstance(background, str):
+        background = Image.new("RGB", size, background)
         
     # Parse colors and fill background
     if _is_cmap(colors):
