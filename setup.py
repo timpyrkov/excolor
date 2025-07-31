@@ -18,7 +18,7 @@ setup(
     packages=find_packages(exclude=("docs")),
     package_dir={"": "."},
     package_data={
-        "excolor": ["*.py", "*.pyi"],
+        "excolor": ["*.py", "*.pyi", "data/colornames.csv"],
     },
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -30,12 +30,13 @@ setup(
     zip_safe=False,
     install_requires=[
         "numpy",
+        "pandas",
+        "scipy",
         "pillow",
         "matplotlib",
+        "cycler",
         "opencv-python",
         "pythonperlin",
         "requests",
-        "seaborn",
     ],
 )
-

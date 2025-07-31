@@ -1,0 +1,4 @@
+pytest
+anyio
+hydra-core
+seaborn

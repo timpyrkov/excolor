@@ -10,8 +10,10 @@ import pylab as plt
 import matplotlib.colors as mc
 from matplotlib.colors import ListedColormap, Colormap
 from matplotlib.patches import Rectangle
-from .colortools import lighten, darken, _is_arraylike
+from .colortools import lighten, darken
+from .colortypes import _get_color_type
 from .cmaptools import get_bgcolor
+from .utils import interpolate_colors
 from typing import Union, Tuple, List, Optional
 from PIL import Image
 
@@ -19,7 +21,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def _get_gradient_colors(c: Union[List[str], str, Colormap]) -> List[str]:
+def _get_gradient_colors(c: Union[List[str], str, Colormap], n: int = None) -> List[str]:
     """
     Converts a color string, a cmap, or a list of colors to a list of gradient colors.
 
@@ -31,6 +33,8 @@ def _get_gradient_colors(c: Union[List[str], str, Colormap]) -> List[str]:
         - A color name (str)
         - A colormap name (str)
         - A Colormap instance
+    n : int or None
+        Number of colors to generate. Used if list of colors is not provided explicitly.
 
     Returns
     -------
@@ -42,14 +46,19 @@ def _get_gradient_colors(c: Union[List[str], str, Colormap]) -> List[str]:
     >>> colors = get_gradient_colors('gruvbox')
     >>> print(colors)
     """
-    if _is_arraylike(c):
+    if _get_color_type(c) is None and isinstance(c, list):
         colors = c
     else:
         try:
             color = get_bgcolor(c)
         except:
             color = c
-        colors = [lighten(color, 0.2), color, darken(color, 0.2), darken(color, 0.4)]
+        colors = [lighten(color, 0.15), color, darken(color, 0.15), darken(color, 0.3)]
+    if n is not None:
+        if n <= 1:
+            colors = [colors[max(0,1)]]
+        else:
+            colors = interpolate_colors(colors, n)
     return colors
 
 

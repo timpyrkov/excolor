@@ -13,7 +13,8 @@ from matplotlib.figure import Figure
 from matplotlib.colors import Colormap
 from typing import List, Tuple, Union, Optional
 from .gradient import fill_gradient
-from .colortools import _is_arraylike, lighten, darken, to_rgb
+from .colortools import lighten, darken
+from .colortypes import _is_arraylike, to_rgb
 from .imagetools import pixels_to_size_and_dpi, remove_margins, add_layer
 from .imagetools import fig2img, img2arr, arr2img, mask2img
 
@@ -46,7 +47,7 @@ class Patch:
         start: Optional[Tuple[int, int]] = None
     ):
         """
-        Initialize a Patch from coordinates or mask.
+        Initializes a Patch from coordinates or mask.
 
         Parameters
         ----------
@@ -105,7 +106,7 @@ class Patch:
 
     def _calculate_mask_from_coords(self, coords: np.ndarray) -> None:
         """
-        Calculate binary mask from coordinates using matplotlib polygon filling.
+        Calculates binary mask from coordinates using matplotlib polygon filling.
 
         Notes
         -----
@@ -146,7 +147,7 @@ class Patch:
 
     def _calculate_mask_from_img(self, img: Image.Image) -> None:
         """
-        Calculate binary mask from image.
+        Calculates binary mask from image.
 
         Notes
         -----
@@ -173,7 +174,7 @@ class Patch:
 
     def fill_solid(self, color: str) -> Image.Image:
         """
-        Fill the patch with a solid color.
+        Fills the patch with a solid color.
 
         Parameters
         ----------
@@ -199,7 +200,7 @@ class Patch:
         angle: float = 0,
     ) -> Image.Image:
         """
-        Fill the patch with a gradient.
+        Fills the patch with a gradient.
 
         Parameters
         ----------
@@ -221,7 +222,7 @@ class Patch:
 
     def _create_full_image_mask(self, img: Image.Image) -> np.ndarray:
         """
-        Create a binary mask for the entire image.
+        Creates a binary mask for the entire image.
 
         This method creates a binary mask for the entire image, handling cases where
         parts of the patch's bounding box may fall outside the image boundaries.
@@ -276,7 +277,7 @@ class Patch:
         sigma: float = 10
     ) -> np.ndarray:
         """
-        Create a blurred binary mask for shadow or glow.
+        Creates a blurred binary mask for shadow or glow.
         Returns a 2D array of the same size as the image.
         """
         # Create a binary mask for the entire image
@@ -297,7 +298,7 @@ class Patch:
         color: str = "#000000"
     ) -> Image.Image:
         """
-        Cast a shadow of the patch.
+        Casts a shadow of the patch.
 
         Note:
         -----
@@ -340,7 +341,7 @@ class Patch:
 
     def get_average_color(self, img: Image.Image) -> str:
         """
-        Calculate the average color of the area where the patch will be placed.
+        Calculates the average color of the area where the patch will be placed.
 
         Parameters
         ----------
@@ -368,7 +369,7 @@ class Patch:
 
     def get_centroid_color(self, img: Image.Image) -> str:
         """
-        Calculate the color of the centroid of the patch.
+        Calculates the color of the centroid of the patch.
 
         Parameters
         ----------
@@ -397,7 +398,7 @@ class Patch:
 
     def get_darkest_color(self, img: Image.Image) -> str:
         """
-        Calculate the darkest color of the area where the patch will be placed.
+        Calculates the darkest color of the area where the patch will be placed.
 
         Parameters
         ----------
@@ -427,7 +428,7 @@ class Patch:
 
     def get_lightest_color(self, img: Image.Image) -> str:
         """
-        Calculate the lightest color of the area where the patch will be placed.
+        Calculates the lightest color of the area where the patch will be placed.
 
         Parameters
         ----------
@@ -459,7 +460,7 @@ class Patch:
 
     def draw(self, fig: Figure, size: Tuple[int, int]) -> None:
         """
-        Draw the patch fill and shadow on an image.
+        Draws the patch fill and shadow on an image.
 
         Parameters
         ----------

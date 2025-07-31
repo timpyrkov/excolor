@@ -9,9 +9,10 @@ import numpy as np
 import pylab as plt
 import matplotlib.colors as mc
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Colormap
-from .colortools import to_hex, show_colors, darken
+from .colortypes import to_hex, to_rgb
+from .colortools import show_colors, darken
 from .utils import get_colors, _is_qualitative, _is_divergent, _is_cyclic
-from typing import Union, Tuple, List, Callable
+from typing import Union, Tuple, List, Callable, Optional
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -19,7 +20,7 @@ warnings.filterwarnings("ignore")
 
 def _get_cmap_list() -> List[str]:
     """
-    Helper function to get a list of all registered colormaps in matplotlib.
+    Gets a list of all registered colormaps in matplotlib.
 
     Returns
     -------
@@ -39,7 +40,7 @@ def _get_cmap_list() -> List[str]:
 
 def _get_cmap_categories(cmap: Union[str, Colormap]) -> List[str]:
     """
-    Helper function to get the kind of a colormap.
+    Gets the kind of a colormap.
 
     This function determines the kind of a colormap based on its properties.
 
@@ -68,7 +69,7 @@ def _get_cmap_categories(cmap: Union[str, Colormap]) -> List[str]:
 
 def _register_cmap(cmap: Colormap) -> None:
     """
-    Helper function to register a matplotlib colormap in the current session.
+    Registers a matplotlib colormap in the current session.
 
     This function attempts to register a colormap with matplotlib's colormap registry.
     If the colormap is already registered or if registration fails for any reason,
@@ -97,7 +98,7 @@ def _register_cmap(cmap: Colormap) -> None:
 
 def _add_extended_colormaps() -> None:
     """
-    Helper function to extends the list of registered colormaps.
+    Extends the list of registered colormaps.
 
     This function adds a variety of custom colormaps to matplotlib's registry,
     including:
@@ -161,7 +162,7 @@ def _add_extended_colormaps() -> None:
     return
 
 
-def show_colorbar(cmap: Union[str, Colormap]) -> None:
+def show_colorbar(cmap: Union[str, Colormap], ax: Optional[plt.Axes] = None) -> None:
     """
     Displays a colormap as a colorbar.
 
@@ -173,11 +174,13 @@ def show_colorbar(cmap: Union[str, Colormap]) -> None:
     ----------
     cmap : str or matplotlib.colors.Colormap
         Colormap name or instance to display
+    ax : matplotlib.axes.Axes, optional
+        Axes to plot on. If None, a new figure is created.
 
     Returns
     -------
     None
-        Displays the colorbar visualization using matplotlib
+        Displays the colorbar visualization using matplotlib.
 
     Examples
     --------
@@ -187,7 +190,11 @@ def show_colorbar(cmap: Union[str, Colormap]) -> None:
     cmap = plt.get_cmap(cmap)
     gradient = np.linspace(0, 1, 256)
     gradient = np.vstack((gradient, gradient))
-    plt.figure(figsize=(12,2), facecolor="#00000000")
+    new_figure = ax is None
+    if new_figure:
+        plt.figure(figsize=(12,2), facecolor="#00000000")
+    else:
+        ax.set_facecolor("#00000000")
     plt.title(f'{cmap.name}  colorbar', fontsize=20, color="grey", pad=16)
     plt.imshow(gradient, aspect="auto", cmap=cmap)
     plt.xticks([0, 127, 255], ["0", "0.5", "1"], fontsize=16, color="grey")
@@ -195,7 +202,9 @@ def show_colorbar(cmap: Union[str, Colormap]) -> None:
     for e in ["top", "bottom", "right", "left"]:
         plt.gca().spines[e].set_color("#00000000")
     plt.tight_layout()
-    plt.show()
+    if new_figure:
+        plt.show()
+        plt.close()
     return
 
 
@@ -203,18 +212,20 @@ def show_cmap(cmap: Union[str, Colormap], verbose: bool = True) -> None:
     """
     Displays a colormap's colorbar, sample colors, and background color.
 
+    This function displays a colormap's colorbar, sample colors, and background color.
+    If verbose is True, it also prints information about the colormap's properties.
+
     Parameters
     ----------
     cmap : str or matplotlib.colors.Colormap
         Colormap name or instance to display
     verbose : bool, default=True
-        If True, print information about the colormap
-        If False, only display the sample colors
+        If True, print information about the colormap.
 
     Returns
     -------
     None
-        Displays the colormap visualization using matplotlib
+        Displays the colormap and its properties using matplotlib.
 
     Examples
     --------
@@ -248,13 +259,13 @@ def show_cmap(cmap: Union[str, Colormap], verbose: bool = True) -> None:
     return
 
 
-def list_cmaps(category: str = 'All') -> None:
+def list_cmaps(category: str = 'All', display: bool = False) -> None:
     """
     Lists and shows all registered colormaps.
 
     This function prints a list of all available colormaps in matplotlib,
-    along with their properties (Discrete, Continuous, Divergent, Cyclic).
-    Optionally, it can display each colormap's colors.
+    along with their properties (e.g., Qualitative, Continuous, Divergent, Cyclic).
+    If a category other than 'All' is provided, the colormaps are displayed as a grid.
 
     Parameters
     ----------
@@ -264,6 +275,8 @@ def list_cmaps(category: str = 'All') -> None:
         'Continuous' : list only continuous colormaps
         'Divergent' : list only divergent colormaps
         'Cyclic' : list only cyclic colormaps
+    display : bool, default=False
+        If True, display the colormaps as a grid.
 
     Returns
     -------
@@ -285,16 +298,22 @@ def list_cmaps(category: str = 'All') -> None:
         categories = [f'{k:10}' for k in categories]
         prtstr = f'{cmap:20}' + (' ').join(categories)
         print(prtstr)
-        show_colorbar(cmap)
+        if display:
+            show_colorbar(cmap)
     return
 
 
-def list_qualitative_cmaps() -> None:
+def list_qualitative_cmaps(display: bool = False) -> None:
     """
     Displays all qualitative colormaps in a grid layout.
 
     This function creates a grid of all qualitative colormaps available in matplotlib.
     The grid is displayed using matplotlib.
+
+    Parameters
+    ----------
+    display : bool, default=False
+        If True, display the colormaps as a grid.
 
     Returns
     -------
@@ -305,16 +324,21 @@ def list_qualitative_cmaps() -> None:
     --------
     >>> show_qualitative_cmaps()  # Display all qualitative colormaps
     """
-    list_cmaps(category='Qualitative')
+    list_cmaps(category='Qualitative', display=display)
     return
 
 
-def list_continuous_cmaps() -> None:
+def list_continuous_cmaps(display: bool = False) -> None:
     """
     Displays all continuous colormaps in a grid layout.
 
     This function creates a grid of all continuous colormaps available in matplotlib.
     The grid is displayed using matplotlib.
+
+    Parameters
+    ----------
+    display : bool, default=False
+        If True, display the colormaps as a grid.
 
     Returns
     -------
@@ -325,17 +349,22 @@ def list_continuous_cmaps() -> None:
     --------
     >>> show_continuous_cmaps()  # Display all continuous colormaps
     """ 
-    list_cmaps(category='Continuous')
+    list_cmaps(category='Continuous', display=display)
     return  
 
 
-def list_divergent_cmaps() -> None:
+def list_divergent_cmaps(display: bool = False) -> None:
     """
     Displays all divergent colormaps in a grid layout.
 
     This function creates a grid of all divergent colormaps available in matplotlib.
     The grid is displayed using matplotlib.
 
+    Parameters
+    ----------
+    display : bool, default=False
+        If True, display the colormaps as a grid.
+    
     Returns
     -------
     None
@@ -345,17 +374,22 @@ def list_divergent_cmaps() -> None:
     --------
     >>> show_divergent_cmaps()  # Display all divergent colormaps
     """
-    list_cmaps(category='Divergent')
+    list_cmaps(category='Divergent', display=display)
     return
 
 
-def list_cyclic_cmaps() -> None:
+def list_cyclic_cmaps(display: bool = False) -> None:
     """
     Displays all cyclic colormaps in a grid layout.
 
     This function creates a grid of all cyclic colormaps available in matplotlib.
     The grid is displayed using matplotlib.
 
+    Parameters
+    ----------
+    display : bool, default=False
+        If True, display the colormaps as a grid.
+    
     Returns
     -------
     None
@@ -365,7 +399,7 @@ def list_cyclic_cmaps() -> None:
     --------
     >>> show_cyclic_cmaps()  # Display all cyclic colormaps
     """
-    list_cmaps(category='Cyclic')
+    list_cmaps(category='Cyclic', display=display)
     return
 
 
@@ -448,8 +482,48 @@ def get_bgcolor(cmap: Union[str, Colormap]) -> str:
 
 
 """ Aliases for functions """
-list_colormaps: Callable[..., None] = list_cmaps
+def show_cmaps(category: str = 'All'):
+    """Alias for show_colormaps(display=True)."""
+    return show_colormaps(category=category, display=True)
+
+
+def show_qualitative_cmaps(category: str = 'All'):
+    """Alias for list_qualitative_cmaps(display=True)."""
+    return list_qualitative_cmaps(display=True)
+
+
+def show_continuous_cmaps(category: str = 'All'):
+    """Alias for list_continuous_cmaps(display=True)."""
+    return list_continuous_cmaps(display=True)
+
+
+def show_divergent_cmaps(category: str = 'All'):
+    """Alias for list_divergent_cmaps(display=True)."""
+    return list_divergent_cmaps(display=True)
+
+
+def show_cyclic_cmaps(category: str = 'All'):
+    """Alias for list_cyclic_cmaps(display=True)."""
+    return list_cyclic_cmaps(display=True)
+
+
+# Inherit docstring from show_colormaps
+show_cmaps.__doc__ = list_cmaps.__doc__
+show_qualitative_cmaps.__doc__ = list_qualitative_cmaps.__doc__
+show_continuous_cmaps.__doc__ = list_continuous_cmaps.__doc__
+show_divergent_cmaps.__doc__ = list_divergent_cmaps.__doc__
+show_cyclic_cmaps.__doc__ = list_cyclic_cmaps.__doc__
+
 show_colormap: Callable[..., None] = show_cmap
+show_qualitative_colormaps: Callable[..., None] = show_qualitative_cmaps
+show_continuous_colormaps: Callable[..., None] = show_continuous_cmaps
+show_divergent_colormaps: Callable[..., None] = show_divergent_cmaps
+show_cyclic_colormaps: Callable[..., None] = show_cyclic_cmaps
+list_colormaps: Callable[..., None] = list_cmaps
+list_qualitative_colormaps: Callable[..., None] = list_qualitative_cmaps
+list_continuous_colormaps: Callable[..., None] = list_continuous_cmaps
+list_divergent_colormaps: Callable[..., None] = list_divergent_cmaps
+list_cyclic_colormaps: Callable[..., None] = list_cyclic_cmaps
 
 import types
 __all__ = [name for name, thing in globals().items()

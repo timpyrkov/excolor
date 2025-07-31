@@ -1,142 +1,101 @@
-import numpy as np
+
+import os
 import pytest
-from matplotlib.colors import Colormap, LinearSegmentedColormap
-from PIL import Image
+import numpy as np
+from matplotlib.colors import ListedColormap
+from excolor import get_color_name, lighten, darken, saturate, desaturate, to_rgb
 
-from excolor.colortools import (_is_cmap, _is_arraylike, _is_rgb, _aspect_ratio,
-                              show_colors, hex_to_rgb, rgb_to_hex, get_colors,
-                              get_colors_rgb, get_colors_hex)
+def test_get_color_name_exact_match():
+    """Tests that an exact hex color returns the correct name."""
+    assert get_color_name('#FF0000') == 'red'
+    assert get_color_name("#F0F8FF").lower() == "aliceblue"
+    assert get_color_name('#008000') == 'green'
 
-def test_is_cmap():
-    # Test with string input
-    assert _is_cmap('viridis') == True
-    assert _is_cmap('not_a_cmap') == False
-    
-    # Test with Colormap input
-    cmap = LinearSegmentedColormap.from_list('custom', ['red', 'blue'])
-    assert _is_cmap(cmap) == True
-    
-    # Test with invalid input types
-    assert _is_cmap(123) == False
-    assert _is_cmap([1, 2, 3]) == False
-    assert _is_cmap(None) == False
+def test_get_color_name_case_insensitivity():
+    """Tests that the function is case-insensitive for hex codes."""
+    assert get_color_name('#ff0000') == 'red'
+    assert get_color_name('#FF0000') == 'red'
 
-def test_is_arraylike():
-    # Test with various array-like objects
-    assert _is_arraylike(np.array([1, 2, 3])) == True
-    assert _is_arraylike([1, 2, 3]) == True
-    assert _is_arraylike((1, 2, 3)) == True
-    assert _is_arraylike({1, 2, 3}) == True
+def test_get_color_name_closest_match():
+    """Tests that a non-exact hex color returns the closest named color."""
+    # Very close to white
+    assert get_color_name('#FEFEFE') == 'pale grey'
+    # Very close to black
+    assert get_color_name('#010101') == 'black'
+    # A color closer to darkcyan than any other color
+    assert get_color_name('#018B8C') == 'dark cyan'
 
-    # Test with non-array-like objects
-    assert _is_arraylike({1: 'A'}) == False
-    assert _is_arraylike("string") == False
-    assert _is_arraylike(123) == False
-    assert _is_arraylike(None) == False
+# --- Tests for Color Manipulation Functions ---
 
-def test_is_rgb():
-    # Test valid RGB arrays
-    assert _is_rgb(np.array([0.5, 0.5, 0.5])) == True
-    assert _is_rgb(np.array([0.5, 0.5, 0.5, 1.0])) == True  # RGBA
-    
-    # Test invalid RGB arrays
-    assert _is_rgb(np.array([0.5, 0.5])) == False  # Too few components
-    assert _is_rgb(np.array([0.5, 0.5, 0.5, 1.0, 1.0])) == False  # Too many components
-    assert _is_rgb(np.array([2.0, 0.5, 0.5])) == False  # Values out of range
-    assert _is_rgb(np.array([-0.1, 0.5, 0.5])) == False  # Values out of range
+@pytest.mark.parametrize("color_input, factor, expected_output", [
+    ("red", 0.2, '#ff6666'),
+    ("#ff0000", 0.2, '#ff6666'),
+    ((1.0, 0.0, 0.0), 0.2, (1.0, 0.4, 0.4)),
+    ((255, 0, 0), 0.2, (255, 102, 102)),
+    ("rgb(255, 0, 0)", 0.2, "rgb(255, 102, 102)"),
+])
+def test_lighten_single_color(color_input, factor, expected_output):
+    """Tests lighten() with single color inputs in various formats."""
+    result = lighten(color_input, factor)
+    if isinstance(result, str):
+        assert result.lower() == expected_output.lower()
+    else:
+        assert np.allclose(result, expected_output, atol=1e-2)
 
-def test_aspect_ratio():
-    # Test various input lengths
-    assert _aspect_ratio(12) == (4, 3)
-    assert _aspect_ratio(16) == (4, 4)
-    assert _aspect_ratio(20) == (5, 4)
-    
-    # Test with minimum length constraint
-    assert _aspect_ratio(12, lmin=5) == (6, 2)
-    
-    # Test edge cases
-    assert _aspect_ratio(1) == (1, 1)
-    assert _aspect_ratio(2) == (2, 1)
+@pytest.mark.parametrize("color_input, factor, expected_output", [
+    ("red", 0.2, '#990000'),
+    ("#ff0000", 0.2, '#990000'),
+    ((1.0, 0.0, 0.0), 0.2, (0.6, 0.0, 0.0)),
+    ((255, 0, 0), 0.2, (153, 0, 0)),
+    ("rgb(255, 0, 0)", 0.2, "rgb(153, 0, 0)"),
+])
+def test_darken_single_color(color_input, factor, expected_output):
+    """Tests darken() with single color inputs in various formats."""
+    result = darken(color_input, factor)
+    if isinstance(result, str):
+        assert result == expected_output
+    else:
+        assert np.allclose(result, expected_output, atol=1e-2)
 
-def test_hex_to_rgb():
-    # Test valid hex colors
-    assert np.allclose(hex_to_rgb('#FF0000'), [1.0, 0.0, 0.0])
-    assert np.allclose(hex_to_rgb('#00FF00'), [0.0, 1.0, 0.0])
-    assert np.allclose(hex_to_rgb('#0000FF'), [0.0, 0.0, 1.0])
-    
-    # Test shorthand hex
-    assert np.allclose(hex_to_rgb('#F00'), [1.0, 0.0, 0.0])
-    
-    # Test with/without hash
-    assert np.allclose(hex_to_rgb('FF0000'), [1.0, 0.0, 0.0])
-    
-    # Test invalid hex colors
-    with pytest.raises(ValueError):
-        hex_to_rgb('invalid')
-    with pytest.raises(ValueError):
-        hex_to_rgb('#GG0000')
+@pytest.mark.parametrize("color_input, factor, expected_output", [
+    ("#808080", 0.5, '#c04141'),
+    ((0.5, 0.5, 0.5), 0.5, (0.75, 0.25, 0.25)),
+])
+def test_saturate_single_color(color_input, factor, expected_output):
+    """Tests saturate() with single color inputs."""
+    result = saturate(color_input, factor)
+    if isinstance(result, str):
+        assert result.lower() == expected_output.lower()
+    else:
+        assert np.allclose(result, expected_output, atol=1e-2)
 
-def test_rgb_to_hex():
-    # Test RGB arrays
-    assert rgb_to_hex([1.0, 0.0, 0.0]) == '#ff0000'
-    assert rgb_to_hex([0.0, 1.0, 0.0]) == '#00ff00'
-    assert rgb_to_hex([0.0, 0.0, 1.0]) == '#0000ff'
-    
-    # Test with numpy arrays
-    assert rgb_to_hex(np.array([1.0, 0.0, 0.0])) == '#ff0000'
-    
-    # Test with invalid inputs
-    with pytest.raises(ValueError):
-        rgb_to_hex([2.0, 0.0, 0.0])  # Values > 1
-    with pytest.raises(ValueError):
-        rgb_to_hex([-0.1, 0.0, 0.0])  # Values < 0
+@pytest.mark.parametrize("color_input, factor, expected_output", [
+    ("red", 0.5, '#bf4040'),
+    ((1.0, 0.0, 0.0), 0.5, (0.75, 0.25, 0.25)),
+])
+def test_desaturate_single_color(color_input, factor, expected_output):
+    """Tests desaturate() with single color inputs."""
+    result = desaturate(color_input, factor)
+    if isinstance(result, str):
+        assert result.lower() == expected_output.lower()
+    else:
+        assert np.allclose(result, expected_output, atol=1e-2)
 
-def test_get_colors():
-    # Test with valid inputs
-    n = 5
-    colors = get_colors(n, cmap='viridis')
-    assert len(colors) == n
-    assert all(isinstance(c, np.ndarray) for c in colors)
-    
-    # Test with custom colormap
-    custom_cmap = LinearSegmentedColormap.from_list('custom', ['red', 'blue'])
-    colors = get_colors(n, cmap=custom_cmap)
-    assert len(colors) == n
-    
-    # Test invalid inputs
-    with pytest.raises(ValueError):
-        get_colors(0)  # n must be positive
-    with pytest.raises(ValueError):
-        get_colors(n, cmap='invalid_cmap')
+def test_lighten_list():
+    """Tests that lighten() works correctly on a list of colors."""
+    colors = ["red", (0, 1, 0)]
+    result = lighten(colors, 0.2)
+    assert len(result) == 2
+    assert result[0].lower() == '#ff6666'
+    assert to_rgb(result[1])[1] > to_rgb((0, 1, 0))[1]
 
-def test_get_colors_rgb():
-    # Test with valid inputs
-    n = 5
-    colors = get_colors_rgb(n, cmap='viridis')
-    assert len(colors) == n
-    assert all(isinstance(c, np.ndarray) for c in colors)
-    assert all(len(c) == 3 for c in colors)  # RGB arrays
-    
-    # Test value ranges
-    assert all(np.all((c >= 0) & (c <= 1)) for c in colors)
-
-def test_get_colors_hex():
-    # Test with valid inputs
-    n = 5
-    colors = get_colors_hex(n, cmap='viridis')
-    assert len(colors) == n
-    assert all(isinstance(c, str) for c in colors)
-    assert all(c.startswith('#') for c in colors)
-    assert all(len(c) == 7 for c in colors)  # #RRGGBB format
-
-def test_show_colors():
-    # Test basic functionality (no error)
-    colors = ['#FF0000', '#00FF00', '#0000FF']
-    show_colors(colors)
-    
-    # Test with different input types
-    show_colors(np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
-    show_colors(['red', 'green', 'blue'])
-    
-    # Test with custom figsize and title
-    show_colors(colors, figsize=(8, 2), title='Test Colors') 
+def test_darken_colormap():
+    """Tests that darken() works correctly on a colormap object."""
+    cmap = ListedColormap(["red", "blue"])
+    result = darken(cmap, 0.2)
+    assert isinstance(result, ListedColormap)
+    assert result.name == cmap.name + "_dark"
+    # Check if the new colors are darker
+    original_colors_rgb = [to_rgb(c) for c in cmap.colors]
+    darkened_colors_rgb = [to_rgb(c) for c in result.colors]
+    assert darkened_colors_rgb[0][0] < original_colors_rgb[0][0]

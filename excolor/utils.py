@@ -5,8 +5,10 @@
 This module contains utility functions for colortools and cmaptools.
 """
 
+import os
 import re
 import numpy as np
+import pandas as pd
 from typing import Any, Union, Optional, List, Tuple
 import matplotlib.colors as mc
 from matplotlib.colors import LinearSegmentedColormap, Colormap
@@ -14,7 +16,71 @@ from matplotlib import colormaps
 from matplotlib.colors import ListedColormap
 
 import warnings
+import numpy as np
 warnings.filterwarnings("ignore")
+
+
+
+_RICH_COLOR_NAMES = None
+
+def _load_rich_color_names():
+    """
+    Loads the rich color data from the CSV file, caching it in memory.
+
+    This function reads a CSV file containing color names and their corresponding
+    RGB values. The data is loaded only once and then cached in a global
+    variable `_RICH_COLOR_NAMES` for subsequent calls to avoid repeated file I/O.
+
+    Returns
+    -------
+    dict
+        A dictionary containing two keys:
+        - 'names': A numpy array of color names.
+        - 'rgbs': A numpy array of RGB values.
+    """
+    global _RICH_COLOR_NAMES
+    if _RICH_COLOR_NAMES is None:
+        data_path = os.path.join(os.path.dirname(__file__), 'data', 'colornames.csv')
+        df = pd.read_csv(data_path)
+        _RICH_COLOR_NAMES = {
+            'names': df['name'].to_numpy(),
+            'rgbs': df[['R', 'G', 'B']].to_numpy()
+        }
+    return _RICH_COLOR_NAMES
+
+
+def get_color_name(color: Any) -> str:
+    """
+    Finds the closest color name from the rich color dataset for a given color.
+
+    This function converts the input color to RGB, then uses a vectorized
+    numpy operation to efficiently find the color with the minimum Euclidean
+    distance in the RGB space from a pre-compiled list of over 9,000 colors.
+
+    Parameters
+    ----------
+    color : Any
+        The input color in any format supported by `to_rgb255`.
+
+    Returns
+    -------
+    str
+        The closest matching color name.
+    """
+    color_data = _load_rich_color_names()
+    names = color_data['names']
+    rgbs = color_data['rgbs']
+
+    # Convert input color to RGB [0, 255] format
+    input_rgb = 255 * np.array(mc.to_rgb(color))
+
+    # Calculate Euclidean distance in a vectorized way
+    distances = np.sqrt(np.sum((rgbs - input_rgb) ** 2, axis=1))
+
+    # Find the index of the minimum distance
+    closest_idx = np.argmin(distances)
+
+    return names[closest_idx]
 
 
 def _aspect_ratio(length: int, lmin: int = 0) -> Tuple[int, int]:
@@ -54,8 +120,8 @@ def _aspect_ratio(length: int, lmin: int = 0) -> Tuple[int, int]:
     --------
     >>> _aspect_ratio(12)  # For 12 items
     (6, 2)  # 6 columns, 2 rows
-    >>> _aspect_ratio(5, lmin=6)  # Few items, below minimum
-    (5, 1)  # Single row
+    >>> _aspect_ratio(8, lmin=10)  # Few items, below minimum
+    (8, 1)  # Single row
     """
     if length > 0:
         d = np.array([-2, -1, 0, 1, 2])
@@ -82,145 +148,12 @@ def _aspect_ratio(length: int, lmin: int = 0) -> Tuple[int, int]:
             n, m = n[0], m[0]
         if length <= lmin or n > length:
             n = length
+        if n < lmin:
+            n = lmin
+            m = np.ceil(length / n).astype(int)
     else:
         n, m = 0, 0
     return n, m
-
-
-def _is_arraylike(x: Any) -> bool:
-    """
-    Checks if an object is array-like (can be treated as a sequence of elements).
-
-    This function tests whether an object can be treated as an array or sequence,
-    supporting operations like indexing and iteration. It checks for common
-    array-like types in Python and NumPy.
-
-    Parameters
-    ----------
-    x : Any
-        Object to check for array-like properties
-
-    Returns
-    -------
-    bool
-        True if x is array-like (numpy.ndarray, list, tuple, or set),
-        False otherwise
-
-    Examples
-    --------
-    >>> _is_arraylike([1, 2, 3])  # True
-    >>> _is_arraylike(np.array([1, 2, 3]))  # True
-    >>> _is_arraylike((1, 2, 3))  # True
-    >>> _is_arraylike({1, 2, 3})  # True
-    >>> _is_arraylike(42)  # False
-    """
-    mask = isinstance(x, np.ndarray) or isinstance(x, list)
-    mask = mask or isinstance(x, tuple) or isinstance(x, set)
-    return bool(mask)
-
-
-def _is_rgb(x: Any) -> bool:
-    """
-    Checks if an object is an RGB or RGBA like array.
-
-    This function tests whether an object can be treated as an RGB or RGBA array.
-
-    Parameters
-    ----------
-    x : Any
-        Object to check for RGB or RGBA properties
-
-    Returns
-    -------
-    bool
-        True if c is an RGB or RGBA array, False otherwise
-
-    Examples
-    --------
-    >>> _is_rgb((1.0, 0.0, 0.0))  # True
-    >>> _is_rgb((1.0, 0.0, 0.0, 1.0))  # True
-    >>> _is_rgb('red')  # False
-    """ 
-    if not isinstance(x, list) and not isinstance(x, tuple):
-        return False
-    if not len(x) in [3, 4]:
-        return False
-    mask = all([isinstance(x_, float) or isinstance(x_, int) for x_ in x])
-    mask = mask and all([0 <= x_ <= 255 for x_ in x])
-    return bool(mask)
-
-
-def _is_hex(x: Any) -> bool:
-    """
-    Checks if the input is a valid hex color string.
-
-    A valid hex color string starts with '#' and is either 7 or 9 characters long (e.g. '#RRGGBB' or '#RRGGBBAA'),
-    and all characters after '#' are valid hexadecimal digits.
-
-    Parameters
-    ----------
-    x : object
-        Input to check
-
-    Returns
-    -------
-    bool
-        True if x is a valid hex color string, False otherwise
-
-    Examples
-    --------
-    >>> _is_hex('#FF00AA')  # True
-    >>> _is_hex('#FF00AABB')  # True
-    >>> _is_hex('#GG00AA')  # False
-    >>> _is_hex('red')  # False
-    """
-    if not isinstance(x, str):
-        return False
-    match = re.search(r'^#(?:[0-9a-fA-F]{3,4}){1,2}$', x)
-    return bool(match)    
-
-
-def _is_color(x: Any) -> bool:
-    """
-    Checks if the input is a valid color representation.
-
-    Returns True if x is:
-    - an RGB or RGBA array (using _is_rgb)
-    - a valid hex color string (using _is_hex)
-    - a named color string in matplotlib (CSS4_COLORS, BASE_COLORS, TABLEAU_COLORS, XKCD_COLORS)
-    Otherwise returns False.
-
-    Parameters
-    ----------
-    x : Any
-        Input to check
-
-    Returns
-    -------
-    bool
-        True if x is a valid color, False otherwise
-
-    Examples
-    --------
-    >>> _is_color((1.0, 0.0, 0.0))  # True (RGB)
-    >>> _is_color('#FF00AA')  # True (hex)
-    >>> _is_color('red')  # True (named)
-    >>> _is_color('notacolor')  # False
-    """
-    if _is_rgb(x):
-        return True
-    if _is_hex(x):
-        return True
-    if isinstance(x, str):
-        if x in mc.CSS4_COLORS:
-            return True
-        if x in mc.BASE_COLORS:
-            return True
-        if x in mc.TABLEAU_COLORS:
-            return True
-        if x in mc.XKCD_COLORS:
-            return True
-    return False
 
 
 def _is_cmap(c: Any) -> bool:
@@ -291,7 +224,7 @@ def _is_qualitative(cmap: Union[str, Colormap]) -> bool:
     if isinstance(cmap, str):
         cmap = colormaps[cmap]
     try:
-        mask = isinstance(cmap, ListedColormap)
+        mask = isinstance(cmap, ListedColormap) & (len(cmap.colors) <= 24)
     except:
         mask = False
     return bool(mask)
@@ -432,6 +365,8 @@ def get_colors(
         cmap = colormaps[cmap]
     if isinstance(cmap, ListedColormap):
         colors = [mc.to_hex(c) for c in cmap.colors] # type: ignore
+        if n is None and len(colors) > 24:
+            n = 24
         if n is not None and len(colors) > 0 and n != len(colors):
             colors = interpolate_colors(colors, n=10*len(colors))
             cmap = LinearSegmentedColormap.from_list("cmap", colors)
@@ -445,7 +380,7 @@ def get_colors(
     return colors
 
 
-def interpolate_colors(c: List[str], n: int = 5) -> List[str]:
+def interpolate_colors(c: List, n: int = 5) -> List[str]:
     """
     Creates a smooth gradient of colors by interpolating between input colors.
 
@@ -454,7 +389,7 @@ def interpolate_colors(c: List[str], n: int = 5) -> List[str]:
 
     Parameters
     ----------
-    c : list of str
+    c : list
         List of input colors in any matplotlib-compatible format (hex, name, etc.)
     n : int, default=5
         Number of colors to generate in the output list
@@ -472,6 +407,9 @@ def interpolate_colors(c: List[str], n: int = 5) -> List[str]:
     >>> interpolate_colors(['red', 'blue'], n=4)
     ['#FF0000', '#800080', '#0000FF']
     """
+    if not isinstance(c, list) or len(c) <= 1:
+        raise ValueError("Input must be a list of two or more colors")
+    c = [mc.to_hex(c_) for c_ in c]
     gradient = np.linspace(0,1,n)
     cmap = LinearSegmentedColormap.from_list("cmap", c)
     colors = cmap(gradient)

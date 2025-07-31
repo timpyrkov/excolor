@@ -5,15 +5,21 @@
 This module contains functions to manipulate colors.
 """
 
-import numpy as np
-import pylab as plt
+import os
 import colorsys
+import numpy as np
+import pandas as pd
+import pylab as plt
 from cycler import cycler
 import matplotlib.colors as mc
 from matplotlib import colormaps
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Colormap
 from matplotlib.patches import Rectangle
-from .utils import  _aspect_ratio, _is_arraylike, _is_rgb, _is_color, _is_cmap
+from .utils import _aspect_ratio, _is_cmap
+from .palette import generate_stepwise_palette
+from .colortypes import _is_arraylike, _get_color_type, _is_color, _is_rgb
+from .colortypes import _to_formatted_rgb, _to_formatted_hls, _to_formatted_hsl, _to_formatted_hsv, _to_formatted_oklch
+from .colortypes import to_hex, to_rgb, to_rgb255, to_hsv, to_hls, to_oklch, rgb_to_rgb255
 from .utils import get_colors, _is_qualitative
 from typing import Union, Optional, Tuple, List, Any
 
@@ -27,7 +33,8 @@ def show_colors(
     title: str = "",
     size: Optional[Tuple[int, int]] = None,
     fmt: str = 'hex',
-    verbose: bool = True
+    verbose: bool = True,
+    ax: Optional[plt.Axes] = None
 ) -> None:
     """
     Displays a set of colors as a grid layout with color names.
@@ -54,6 +61,8 @@ def show_colors(
         Output format of color names ('hex', 'rgb', 'hsv', 'hsl')
     verbose : bool, default=True
         If True, prints the list of colors to the console
+    ax : matplotlib.axes.Axes, optional
+        Axes to plot on. If None, a new figure is created.
 
     Returns
     -------
@@ -83,10 +92,12 @@ def show_colors(
         return
     # Type-safe color extraction
     colors: List[Union[str, Tuple[float, ...]]]
+    colormap_title = title
     # If c is a colormap, extract colors
     if _is_cmap(c):
         colors = get_colors(c, exclude_extreme=False)
-        colormap_title = cmap.name
+        if not title:
+            colormap_title = c if isinstance(c, str) else c.name
     # If color or list of colors, convert to list
     elif _is_arraylike(c) and not _is_rgb(c):
         colors = c
@@ -124,7 +135,12 @@ def show_colors(
         m = int(np.ceil(len(rgbcolors) / n))
         size = (2*n+4,2*m)
     fontsize = 12 if size[1] < 2 else 28
-    plt.figure(figsize=size, facecolor="#00000000")
+    # Display colors
+    new_figure = ax is None
+    if new_figure:
+        plt.figure(figsize=size, facecolor="#00000000")
+    else:
+        ax.set_facecolor("#00000000")
     plt.title(colormap_title, fontsize=fontsize, color="grey")
     for k, rgb in enumerate(rgbcolors):
         i = k % n
@@ -144,8 +160,9 @@ def show_colors(
     plt.ylim(-m + d, d)
     plt.gca().set_axis_off()
     plt.tight_layout()
-    plt.show()
-    plt.close()
+    if new_figure:
+        plt.show()
+        plt.close()
     return
 
 
@@ -235,7 +252,7 @@ def list_colors() -> None:
     return
 
 
-def set_color_cycler(c: Union[List[str], str, Colormap], n: int = 3) -> None:
+def set_color_cycler(c: Union[List[str], str, Colormap], n: int = 6, globally: bool = False) -> None:
     """
     Sets the color cycler for matplotlib.
 
@@ -249,14 +266,17 @@ def set_color_cycler(c: Union[List[str], str, Colormap], n: int = 3) -> None:
         Input colors to use in the cycler. Can be:
         - A list of color strings or rgb tuples
         - A colormap name or instance
-    n : int, default=3
+    n : int, default=6
         Number of colors to extract from the colormap if a colormap is provided.
         If a list of colors is provided, this parameter is ignored.
+    globally : bool, default=False
+        If True, set the color cycler for all matplotlib axes in current python session.
+        To reset to defaults use: plt.rcdefaults()
 
     Returns
     -------
     None
-        Modifies the current matplotlib axis's color cycler
+        This function does not return anything; it modifies the matplotlib state.
 
     Examples
     --------
@@ -269,10 +289,22 @@ def set_color_cycler(c: Union[List[str], str, Colormap], n: int = 3) -> None:
         if isinstance(c, str):
             c = colormaps[c]
         if isinstance(c, Colormap):
-            colors = get_colors(c, n, exclude_extreme=True)
+            colors = generate_stepwise_palette(c, n, use_hue=False)
+            m = len(colors) // 2
+            colors1, colors2 = colors[:m], colors[m:]
+            colors = []
+            while colors1 or colors2:
+                if colors1:
+                    colors.append(colors1.pop(0))
+                if colors2:
+                    colors.append(colors2.pop(0))
         else:
             colors = c
-        plt.gca().set_prop_cycle(cycler(color=colors))
+        # Set color cycler globally or locally
+        if globally:
+            plt.rcParams['axes.prop_cycle'] = cycler(color=colors)
+        else:
+            plt.gca().set_prop_cycle(cycler(color=colors))
     except:
         raise ValueError("Invalid color input. Must be a list of colors, a colormap name, or a Colormap instance.")
     return
@@ -330,16 +362,18 @@ def lighten(
             if not _is_qualitative(c):
                 colors = get_colors(c, 256, exclude_extreme=False)
             category = "cmap"
-        elif _is_arraylike(c) and not _is_rgb(c):
-            colors = c
-            category = 'hex' if isinstance(c[0], str) else 'rgb'
-        else:
+        elif _is_color(c):
             colors = [c]
-            category = 'hex' if isinstance(c, str) else 'rgb'
+            category = _get_color_type(c)
+        elif _is_arraylike(c):
+            colors = c
+            category = _get_color_type(c[0])
     except:
         colors = None
         category = None
-    if colors is not None and len(colors) > 1:
+    if colors is None:
+        return None
+    if len(colors) > 1:
         colors = [lighten(color, factor, keep_alpha, mode) for color in colors]
         if category == 'cmap':
             name = c.name + "_light"
@@ -349,23 +383,20 @@ def lighten(
                 colors = LinearSegmentedColormap.from_list(name, colors)
     else:
         try:
+            rgb = to_rgb(colors[0], keep_alpha=True)
+            alpha = rgb[3] if len(rgb) == 4 else None
             if mode == 'hsv':
-                hsv = np.array(to_hsv(colors[0], keep_alpha=keep_alpha))
+                hsv = np.array(to_hsv(rgb))
                 hsv[2] = np.clip(hsv[2] + factor, 0, 1)
                 rgb = mc.hsv_to_rgb(hsv[:3])
-                rgb = rgb + (hsv[3],) if hsv.shape[0] == 4 else rgb
-                rgb = tuple([float(np.round(x, 3)) for x in rgb])
             elif mode in ['hls', 'hsl']:
-                hls = np.array(to_hls(colors[0], keep_alpha=keep_alpha))
+                hls = np.array(to_hls(rgb))
                 hls[1] = np.clip(hls[1] + factor, 0, 1)
                 rgb = colorsys.hls_to_rgb(*hls[:3])
-                rgb = rgb + (hls[3],) if hls.shape[0] == 4 else rgb
-                rgb = tuple([float(np.round(x, 3)) for x in rgb])
-            if category == 'hex':
-                hexval = to_hex(rgb, keep_alpha=keep_alpha)
-                colors = hexval.upper() if hexval is not None else None
-            else:
-                colors = to_rgb(rgb, keep_alpha=keep_alpha)
+            rgb = rgb + (alpha,) if alpha is not None else rgb
+            rgb = tuple([float(np.round(x, 4)) for x in rgb])
+            # Format output
+            colors = _format_output_color(rgb, category)
         except:
             colors = None
     return colors
@@ -423,16 +454,18 @@ def darken(
             if not _is_qualitative(c):
                 colors = get_colors(c, 256, exclude_extreme=False)
             category = "cmap"
-        elif _is_arraylike(c) and not _is_rgb(c):
-            colors = c
-            category = 'hex' if isinstance(c[0], str) else 'rgb'
-        else:
+        elif _is_color(c):
             colors = [c]
-            category = 'hex' if isinstance(c, str) else 'rgb'
+            category = _get_color_type(c)
+        elif _is_arraylike(c):
+            colors = c
+            category = _get_color_type(c[0])
     except:
         colors = None
         category = None
-    if colors is not None and len(colors) > 1:
+    if colors is None:
+        return None
+    if len(colors) > 1:
         colors = [darken(color, factor, keep_alpha, mode) for color in colors]
         if category == 'cmap':
             name = c.name + "_dark"
@@ -442,26 +475,23 @@ def darken(
                 colors = LinearSegmentedColormap.from_list(name, colors)
     else:
         try:
+            rgb = to_rgb(colors[0], keep_alpha=True)
+            alpha = rgb[3] if len(rgb) == 4 else None
             if mode == 'hsv':
-                hsv = np.array(to_hsv(colors[0], keep_alpha=keep_alpha))
+                hsv = np.array(to_hsv(rgb))
                 hsv[2] = np.clip(hsv[2] - factor, 0, 1)
                 rgb = mc.hsv_to_rgb(hsv[:3])
-                rgb = rgb + (hsv[3],) if hsv.shape[0] == 4 else rgb
-                rgb = tuple([float(np.round(x, 3)) for x in rgb])
             elif mode in ['hls', 'hsl']:
-                hls = np.array(to_hls(colors[0], keep_alpha=keep_alpha))
+                hls = np.array(to_hls(rgb))
                 hls[1] = np.clip(hls[1] - factor, 0, 1)
                 rgb = colorsys.hls_to_rgb(*hls[:3])
-                rgb = rgb + (hls[3],) if hls.shape[0] == 4 else rgb
-            if category == 'hex':
-                hexval = to_hex(rgb, keep_alpha=keep_alpha)
-                colors = hexval.upper() if hexval is not None else None
-            else:
-                colors = to_rgb(rgb, keep_alpha=keep_alpha)
+            rgb = rgb + (alpha,) if alpha is not None else rgb
+            rgb = tuple([float(np.round(x, 4)) for x in rgb])
+            # Format output
+            colors = _format_output_color(rgb, category)
         except:
             colors = None
     return colors
-
 
 def saturate(
     c: Union[Colormap, str, List[str], Tuple[float, ...], List[Tuple[float, ...]]],
@@ -515,16 +545,18 @@ def saturate(
             if not _is_qualitative(c):
                 colors = get_colors(c, 256, exclude_extreme=False)
             category = "cmap"
-        elif _is_arraylike(c) and not _is_rgb(c):
-            colors = c
-            category = 'hex' if isinstance(c[0], str) else 'rgb'
-        else:
+        elif _is_color(c):
             colors = [c]
-            category = 'hex' if isinstance(c, str) else 'rgb'
+            category = _get_color_type(c)
+        elif _is_arraylike(c):
+            colors = c
+            category = _get_color_type(c[0])
     except:
         colors = None
         category = None
-    if colors is not None and len(colors) > 1:
+    if colors is None:
+        return None
+    if len(colors) > 1:
         colors = [saturate(color, factor, keep_alpha, mode) for color in colors]
         if category == 'cmap':
             name = c.name + "_saturated"
@@ -534,22 +566,20 @@ def saturate(
                 colors = LinearSegmentedColormap.from_list(name, colors)
     else:
         try:
+            rgb = to_rgb(colors[0], keep_alpha=True)
+            alpha = rgb[3] if len(rgb) == 4 else None
             if mode == 'hsv':
-                hsv = np.array(to_hsv(colors[0], keep_alpha=keep_alpha))
+                hsv = np.array(to_hsv(rgb))
                 hsv[1] = np.clip(hsv[1] + factor, 0, 1)
                 rgb = mc.hsv_to_rgb(hsv[:3])
-                rgb = rgb + (hsv[3],) if hsv.shape[0] == 4 else rgb
-                rgb = tuple([float(np.round(x, 3)) for x in rgb])
             elif mode in ['hls', 'hsl']:
-                hls = np.array(to_hls(colors[0], keep_alpha=keep_alpha))
+                hls = np.array(to_hls(rgb))
                 hls[2] = np.clip(hls[2] + factor, 0, 1)
                 rgb = colorsys.hls_to_rgb(*hls[:3])
-                rgb = rgb + (hls[3],) if hls.shape[0] == 4 else rgb
-            if category == 'hex':
-                hexval = to_hex(rgb, keep_alpha=keep_alpha)
-                colors = hexval.upper() if hexval is not None else None
-            else:
-                colors = to_rgb(rgb, keep_alpha=keep_alpha)
+            rgb = rgb + (alpha,) if alpha is not None else rgb
+            rgb = tuple([float(np.round(x, 4)) for x in rgb])
+            # Format output
+            colors = _format_output_color(rgb, category)
         except:
             colors = None
     return colors
@@ -607,16 +637,18 @@ def desaturate(
             if not _is_qualitative(c):
                 colors = get_colors(c, 256, exclude_extreme=False)
             category = "cmap"
-        elif _is_arraylike(c) and not _is_rgb(c):
-            colors = c
-            category = 'hex' if isinstance(c[0], str) else 'rgb'
-        else:
+        elif _is_color(c):
             colors = [c]
-            category = 'hex' if isinstance(c, str) else 'rgb'
+            category = _get_color_type(c)
+        elif _is_arraylike(c):
+            colors = c
+            category = _get_color_type(c[0])
     except:
         colors = None
         category = None
-    if colors is not None and len(colors) > 1:
+    if colors is None:
+        return None
+    if len(colors) > 1:
         colors = [desaturate(color, factor, keep_alpha, mode) for color in colors]
         if category == 'cmap':
             name = c.name + "_desaturated"
@@ -626,256 +658,57 @@ def desaturate(
                 colors = LinearSegmentedColormap.from_list(name, colors)
     else:
         try:
+            rgb = to_rgb(colors[0], keep_alpha=True)
+            alpha = rgb[3] if len(rgb) == 4 else None
             if mode == 'hsv':
-                hsv = np.array(to_hsv(colors[0], keep_alpha=keep_alpha))
+                hsv = np.array(to_hsv(rgb))
                 hsv[1] = np.clip(hsv[1] - factor, 0, 1)
                 rgb = mc.hsv_to_rgb(hsv[:3])
-                rgb = rgb + (hsv[3],) if hsv.shape[0] == 4 else rgb
-                rgb = tuple([float(np.round(x, 3)) for x in rgb])
             elif mode in ['hls', 'hsl']:
-                hls = np.array(to_hls(colors[0], keep_alpha=keep_alpha))
+                hls = np.array(to_hls(rgb))
                 hls[2] = np.clip(hls[2] - factor, 0, 1)
                 rgb = colorsys.hls_to_rgb(*hls[:3])
-                rgb = rgb + (hls[3],) if hls.shape[0] == 4 else rgb
-            if category == 'hex':
-                hexval = to_hex(rgb, keep_alpha=keep_alpha)
-                colors = hexval.upper() if hexval is not None else None
-            else:
-                colors = to_rgb(rgb, keep_alpha=keep_alpha)
+            rgb = rgb + (alpha,) if alpha is not None else rgb
+            rgb = tuple([float(np.round(x, 4)) for x in rgb])
+            # Format output
+            colors = _format_output_color(rgb, category)
         except:
             colors = None
     return colors
 
 
-def to_hex(c: Union[str, Tuple[float, ...]], keep_alpha: bool = False, safe: bool = False) -> Optional[str]:
-    """
-    Converts a color to its hexadecimal representation.
-
-    This function takes a color in various formats (name, RGB, RGBA) and converts
-    it to a hexadecimal string representation. The alpha channel can be optionally
-    included in the output.
+def _format_output_color(rgb, category):
+    """ 
+    Formats output color based on category. 
 
     Parameters
     ----------
-    c : str or tuple of float
-        Input color. Can be:
-        - A color name (e.g., 'red')
-        - A hex string (e.g., '#FF0000')
-        - An RGB tuple (e.g., (1.0, 0.0, 0.0))
-        - An RGBA tuple (e.g., (1.0, 0.0, 0.0, 1.0))
-    keep_alpha : bool, default=False
-        If True, includes the alpha channel in the hex string
-        If False, returns a 6-character hex string without alpha
-    safe : bool, default=False
-        If True, converts only 0.0 - 1.0 RGB range
-        If False, converts both 0.0 - 1.0 and 0 - 255 RGB ranges
+    rgb : tuple or list
+        An RGB or RGBA color tuple with values in the range [0, 1].
 
     Returns
     -------
-    str or None
-        Hexadecimal color string:
-        - '#RRGGBB' if keep_alpha is False
-        - '#RRGGBBAA' if keep_alpha is True
-        - None if conversion fails
-
-    Examples
-    --------
-    >>> to_hex('red')
-    '#FF0000'
-    >>> to_hex((1.0, 0.0, 0.0, 0.5), keep_alpha=True)
-    '#FF000080'
+    str
+        A CSS-like formatted string, e.g., "rgb(255, 0, 0)" or "rgba(255, 0, 0, 1.0)".
     """
-    hexname = None
-    try:
-        if isinstance(c, tuple) and max(c) > 1.0 and not safe:
-            c = tuple([c_ / 255.0 for c_ in c])
-        hexname = mc.to_hex(c, keep_alpha).upper()
-    except:
-        hexname = None
-    return hexname
-
-
-def to_rgb(c: Union[str, Tuple[float, ...]], keep_alpha: bool = False, fmt: int = 1, safe: bool = False) -> Optional[Tuple[float, ...]]:
-    """
-    Converts a color to its RGB (Red, Green, Blue) representation.
-
-    This function takes a color in various formats (name, hex, RGB, RGBA) and
-    converts it to an RGB tuple with values in the range [0, 1]. If the input
-    cannot be converted to a valid color, returns None.
-
-    Parameters
-    ----------
-    c : str or tuple of float
-        Input color. Can be:
-        - A color name (e.g., 'red')
-        - A hex string (e.g., '#FF0000')
-        - An RGB tuple (e.g., (1.0, 0.0, 0.0))
-        - An RGBA tuple (e.g., (1.0, 0.0, 0.0, 1.0))
-    keep_alpha : bool, default=False
-        If True, includes the alpha channel in the RGB tuple
-        If False, returns a 3-character RGB tuple without alpha
-    fmt : int, default=1
-        Format of the output RGB tuple (1 or 255):
-        - 1: 0.0-1.0 RGB range
-        - 255: 0-255 RGB range
-    safe : bool, default=False
-        If True, converts only 0.0 - 1.0 RGB range
-        If False, converts both 0.0 - 1.0 and 0 - 255 RGB ranges
-
-    Returns
-    -------
-    tuple of float or None
-        RGB tuple with values in range [0, 1], or None if conversion fails.
-        The tuple format is (red, green, blue) where each component is a float
-        between 0 and 1.
-
-    Examples
-    --------
-    >>> to_rgb('red')
-    (1.0, 0.0, 0.0)
-    >>> to_rgb('#00FF00')
-    (0.0, 1.0, 0.0)
-    >>> to_rgb((0.0, 0.0, 1.0))
-    (0.0, 0.0, 1.0)
-    """
-    rgb = None
-    try:
-        color = c
-        if _is_rgb(c):
-            if max(c) > 1.0 and not safe:
-                color = tuple([np.round(c_ / 255.0, 3) for c_ in c])
-            else:
-                color = tuple([np.round(c_, 3) for c_ in c])
-        if keep_alpha:
-            rgb = mc.to_rgba(color)
-        else:
-            rgb = mc.to_rgb(color)
-        rgb = tuple([float(np.round(c_, 3)) for c_ in rgb])
-    except:
-        rgb = None
-    if fmt not in [1, 255]:
-        raise ValueError(f"Invalid format: {fmt}")  
-    if fmt == 255 and rgb is not None:
-        rgb = tuple([int(np.round(c_ * 255)) for c_ in rgb])
-    return rgb
-
-
-def to_hls(c: Union[str, Tuple[float, ...]], keep_alpha: bool = False, fmt: int = 1, safe: bool = False) -> Optional[Tuple[float, ...]]:
-    """
-    Converts a color to its HLS (Hue, Lightness, Saturation) representation.
-
-    This function takes a color in various formats (name, hex, RGB, RGBA) and
-    converts it to an HSL tuple with values in the range [0, 1]. If the input
-    cannot be converted to a valid color, returns None.
-
-    Parameters
-    ----------
-    c : str or tuple of float
-        Input color. Can be:
-        - A color name (e.g., 'red')
-        - A hex string (e.g., '#FF0000')
-        - An RGB tuple (e.g., (1.0, 0.0, 0.0))
-        - An RGBA tuple (e.g., (1.0, 0.0, 0.0, 1.0))
-    keep_alpha : bool, default=False
-        If True, includes the alpha channel in the HLS tuple
-        If False, returns a 3-character HLS tuple without alpha
-    fmt : int, default=1
-        Format of the output HLS tuple (1 or 255):
-        - 1: 0.0-1.0 HLS range
-        - 255: 0-255 HLS range
-    safe : bool, default=False
-        If True, converts only 0.0 - 1.0 HLS range
-        If False, converts both 0.0 - 1.0 and 0 - 255 HLS ranges
-
-    Returns
-    -------
-    tuple of float or None
-        HLS tuple with values in range [0, 1], or None if conversion fails.
-        The tuple format is (hue, lightness, saturation) where each component is a float
-        between 0 and 1.
-
-    Examples
-    --------
-    >>> to_hls('red')
-    (0.0, 0.5, 1.0)
-    >>> to_hls('#00FF00')
-    (0.0, 0.5, 1.0)
-    >>> to_hls((0.0, 0.0, 1.0))
-    (0.0, 0.5, 1.0)
-    """
-    hls = None
-    try:
-        rgb = to_rgb(c, keep_alpha=keep_alpha, fmt=1, safe=safe)
-        hls = colorsys.rgb_to_hls(*rgb[:3])
-        hls = tuple([float(np.round(c_, 3)) for c_ in hls])
-        if len(rgb) == 4:
-            hls = hls + (rgb[3],)
-    except:
-        hls = None
-    if fmt not in [1, 255]:
-        raise ValueError(f"Invalid format: {fmt}")  
-    if fmt == 255 and hls is not None:
-        hls = tuple([int(np.round(c_ * 255)) for c_ in hls])
-    return hls
-
-
-def to_hsv(c: Union[str, Tuple[float, ...]], keep_alpha: bool = False, fmt: int = 1, safe: bool = False) -> Optional[Tuple[float, ...]]:
-    """
-    Converts a color to its HSV (Hue, Saturation, Value) representation.
-
-    This function takes a color in various formats (name, hex, RGB, RGBA) and
-    converts it to an HSV tuple with values in the range [0, 1]. If the input
-    cannot be converted to a valid color, returns None.
-
-    Parameters
-    ----------
-    c : str or tuple of float
-        Input color. Can be:
-        - A color name (e.g., 'red')
-        - A hex string (e.g., '#FF0000')
-        - An RGB tuple (e.g., (1.0, 0.0, 0.0))
-        - An RGBA tuple (e.g., (1.0, 0.0, 0.0, 1.0))
-    keep_alpha : bool, default=False
-        If True, includes the alpha channel in the HSV tuple
-        If False, returns a 3-character HSV tuple without alpha
-    fmt : int, default=1
-        Format of the output HSV tuple (1 or 255):
-        - 1: 0.0-1.0 HSV range
-        - 255: 0-255 HSV range
-    safe : bool, default=False
-        If True, converts only 0.0 - 1.0 HSV range
-        If False, converts both 0.0 - 1.0 and 0 - 255 HSV ranges
-
-    Returns
-    -------
-    tuple of float or None
-        HSV tuple with values in range [0, 1], or None if conversion fails.
-        The tuple format is (hue, saturation, value) where each component is a float
-        between 0 and 1.
-
-    Examples
-    --------
-    >>> to_hsv('red')
-    (0.0, 0.5, 1.0)
-    >>> to_hsv('#00FF00')
-    (0.0, 0.5, 1.0)
-    >>> to_hsv((0.0, 0.0, 1.0))
-    (0.0, 0.5, 1.0)
-    """
-    hsv = None
-    try:
-        rgb = to_rgb(c, keep_alpha=keep_alpha, fmt=1, safe=safe)
-        hsv = mc.rgb_to_hsv(rgb[:3])
-        hsv = tuple([float(np.round(c_, 3)) for c_ in hsv])
-        if len(rgb) == 4:
-            hsv = hsv + (rgb[3],)
-    except:
-        hsv = None
-    if fmt not in [1, 255]:
-        raise ValueError(f"Invalid format: {fmt}")  
-    if fmt == 255 and hsv is not None:
-        hsv = tuple([int(np.round(c_ * 255)) for c_ in hsv])
-    return hsv
+    output = None
+    if category in ['hex', 'hexa', 'name']:
+        output = to_hex(rgb, keep_alpha=True)
+    elif category in ['rgb|hls|hsl|hsv|oklch', 'rgba']:
+        output = rgb
+    elif category in ['rgb255', 'rgba255']:
+        output = rgb_to_rgb255(rgb, keep_alpha=True)
+    elif category in ['rgb255 formatted', 'rgba255 formatted']:
+        output = _to_formatted_rgb(rgb)
+    elif category == 'hls formatted':
+        output = _to_formatted_hls(rgb)
+    elif category == 'hsl formatted':
+        output = _to_formatted_hsl(rgb)
+    elif category == 'hsv formatted':
+        output = _to_formatted_hsv(rgb)
+    elif category == 'oklch formatted':
+        output = _to_formatted_oklch(rgb)
+    return output
 
 
 import types

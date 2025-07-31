@@ -8,11 +8,14 @@ generating gradients, processing images, and more.
 """
 
 from .patch import *
+from .palette import *
 from .gradient import *
 from .imagetools import *
 from .wallpaper import *
 from .colortools import *
+from .colortypes import *
 from .cmaptools import *
+from .utils import interpolate_colors
 from .cmaptools import _add_extended_colormaps
 
 try:

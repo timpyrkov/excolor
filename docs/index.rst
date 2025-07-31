@@ -1,45 +1,25 @@
-.. excolor documentation master file, created by
-   sphinx-quickstart on Tue Jul 18 12:19:55 2023.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 excolor
 =======
 
-Extexnded color utilities for python
+Extended color utilities for python.
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
 
-Installation
-------------
-
-::
-
-   pip install excolor
-
-
-
-Quick start
------------
-
-::
-
-   import excolor
-
-   cmap = plt.get_cmap("gruvbox")
-   cmap
-
+   Home <self>
 
 .. toctree::
    :maxdepth: 2
    :caption: Examples
 
-   notebook/example
-
-
+   notebooks/examples
+   notebooks/imagetools
+   notebooks/wallpapers
 
 .. toctree::
    :maxdepth: 2
-   :caption: Backgrounds
+   :caption: API Reference
 
-   notebook/backgrounds
+   api/modules
 

@@ -12,7 +12,7 @@ import pylab as plt
 from PIL import Image
 from matplotlib.figure import Figure
 import matplotlib.colors as mc
-from typing import List, Tuple, Optional
+from typing import List, Callable, Tuple, Optional
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore")
 
 def _to_prime_factors(n: int) -> List[int]:
     """
-    Helper function to decomposes an integer into its prime factors.
+    Decomposes an integer into its prime factors.
 
     This function takes an integer and returns a list of its prime factors.
     It uses trial division to find the prime factors.
@@ -59,7 +59,7 @@ def _to_prime_factors(n: int) -> List[int]:
 
 def _to_combinations(x: List[int]) -> List[List[int]]:
     """
-    Helper function to generate all combinations of a list of integers.
+    Generates all combinations of a list of integers.
 
     This function takes a list of integers and returns all possible combinations
     of the integers. It uses a recursive approach to generate all combinations.
@@ -89,7 +89,7 @@ def _to_combinations(x: List[int]) -> List[List[int]]:
 
 def _find_common_divisors(x: int, y: int) -> np.ndarray:
     """
-    Helper function to find all common divisors of two integers.
+    Finds all common divisors of two integers.
 
     This function takes two integers and returns a list of their common divisors.
     It uses trial division to find the common divisors.
@@ -399,7 +399,7 @@ def add_layer(fig: Figure, size: Tuple[int, int], layer: Image.Image, start: Tup
 
 def _find_midpoint(data: np.ndarray) -> np.ndarray:
     """
-    Helper function to identify midpoint in a distribution of color intensities.
+    Identifies midpoint in a distribution of color intensities.
 
     This function analyzes a distribution of color intensities to find 
     midpoint. Uses a multi-scale approach with adaptive window size.
@@ -450,7 +450,7 @@ def _find_midpoint(data: np.ndarray) -> np.ndarray:
     return midpoint
 
 
-def colorize(image, facecolor="blue", backgroundcolor=None, contrast=0.5):
+def colorize_image(image, facecolor="blue", backgroundcolor=None, contrast=0.5):
     """
     Colorizes a b&w image
 
@@ -480,7 +480,7 @@ def colorize(image, facecolor="blue", backgroundcolor=None, contrast=0.5):
     # Read image and convert to numpy array
     img = image
     if isinstance(img, str):
-        img = Image.open(img)
+        img = load_image(img)
     x = np.asarray(img).astype(float)
     # Calculate color intensity
     has_alpha = x.ndim == 3 and x.shape[2] % 2 == 0
@@ -506,6 +506,66 @@ def colorize(image, facecolor="blue", backgroundcolor=None, contrast=0.5):
     rgba = 255 * np.clip(rgba, 0, 1)
     img = Image.fromarray(rgba.astype(np.uint8))
     return img
+
+
+def resize_image(image, size):
+    """
+    Resizes an image to the specified size
+
+    Parameters
+    ----------
+    image : str or PIL.PngImagePlugin.PngImageFile
+        Image or file path
+    size : float or tuple of int
+        If float, the image is resized to the specified scale factor.
+        If tuple, the image is resized to the specified size in pixels (width, height).
+
+    Returns
+    -------
+    img : PIL.PngImagePlugin.PngImageFile
+        Resized image
+    """
+    # Read image and convert to numpy array
+    img = image
+    if isinstance(img, str):
+        img = load_image(img)
+    # Resize image
+    if isinstance(size, (float, int)):
+        size = (int(img.size[0] * size), int(img.size[1] * size))
+    img = img.resize(size)
+    return img
+
+def greyscale_image(image):
+    """
+    Converts an image to greyscale keeping channels
+
+    Parameters
+    ----------
+    image : str or PIL.PngImagePlugin.PngImageFile
+        Image or file path
+
+    Returns
+    -------
+    img : PIL.PngImagePlugin.PngImageFile
+        Greyscaled image
+
+    """
+    # Read image and convert to numpy array
+    img = image
+    if isinstance(img, str):
+        img = load_image(img)
+    x = np.asarray(img).astype(float)
+    if x.ndim == 3 and x.shape[2] > 1:
+        y = np.mean(x[:, :, :3], axis=2)
+        y = np.clip(y, 0, 255)
+        for i in range(3):
+            x[:, :, i] = y
+    grayscale = Image.fromarray(x.astype(np.uint8))
+    return grayscale
+
+
+""" Aliases for functions """
+grayscale_image: Callable[..., None] = greyscale_image
 
 
 import types

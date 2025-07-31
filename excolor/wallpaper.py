@@ -11,12 +11,13 @@ from PIL import Image
 import matplotlib.colors as mc
 from pythonperlin import perlin
 from matplotlib.colors import LinearSegmentedColormap, Colormap
-from .cmaptools import get_bgcolor
-from .colortools import _is_cmap, get_colors, lighten, darken, to_rgb, to_hex
+from typing import Union, Tuple, List, Optional, Any
 from .patch import Patch
+from .cmaptools import get_bgcolor
+from .palette import generate_stepwise_palette
+from .colortools import _is_cmap, get_colors, lighten, darken, to_rgb, to_hex
 from .gradient import _get_gradient_colors, fill_gradient
 from .imagetools import *
-from typing import Union, Tuple, List, Optional, Any
 import random
 import io
 import cv2
@@ -25,57 +26,6 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def _get_stepwise_palette(cmap: Union[str, Colormap], n: int = 5) -> List[str]:
-    """
-    Gets step-wise colors from a colormap, organized in two groups.
-
-    This function generates a palette of colors from a colormap, organized in two
-    groups of specified sizes. The colors are ranked by their value (brightness)
-    within each group.
-
-    Parameters
-    ----------
-    cmap : str or matplotlib.colors.Colormap
-        Colormap name or instance
-    n : int, default=5
-        Number of colors from the palette
-
-    Returns
-    -------
-    list of str
-        List of colors in hex format, organized in two groups and ranked by value.
-        The colors are ordered as:
-        - First group (size[0] colors), ranked by value
-        - Second group (size[1] colors), ranked by value
-
-    Notes
-    -----
-    The function:
-    1. Extracts the specified number of colors from the colormap
-    2. Splits them into two groups based on the size parameter
-    3. Ranks the colors in each group by their value (brightness)
-    4. Returns the combined list of ranked colors
-    """
-    def _rank_by_value(colors):
-        hsv = [mc.rgb_to_hsv(mc.to_rgb(c)) for c in colors]
-        v = np.stack(hsv)[:,2]
-        idx = np.arange(len(v))
-        try:
-            p = np.polyfit(idx[:-1], v[:-1], 1)
-            if p[0] < 0:
-                colors = colors[::-1]
-        except Exception:
-            pass
-        return colors
-    m = n // 2
-    cmap = plt.get_cmap(cmap)
-    colors = get_colors(cmap, n, exclude_extreme=False)
-    if len(colors) != n:
-        cmap = LinearSegmentedColormap.from_list("cmap", colors)
-        colors = cmap(np.linspace(0, 1, n))
-        colors = [mc.to_hex(c) for c in colors]
-    colors = _rank_by_value(colors[:m]) + _rank_by_value(colors[m:])
-    return colors
 
 
 def _sigmoid(x: Union[float, np.ndarray], midpoint: float = 0.5, slope: float = 25) -> Union[float, np.ndarray]:
@@ -284,7 +234,8 @@ def sigmoid_wallpaper(
     Returns
     -------
     PIL.Image.Image
-        The generated wallpaper
+        The generated wallpaper as a PIL Image object. If `fname` is provided,
+        the image is also saved to the specified file path.
 
     Examples
     --------
@@ -305,9 +256,9 @@ def sigmoid_wallpaper(
     if _is_cmap(colors):
         if background is None:
             background = Image.new("RGB", size, get_bgcolor(colors))
-        colors = _get_stepwise_palette(colors, n)
+        colors = generate_stepwise_palette(colors, n)
     else:
-        colors = _get_gradient_colors(colors)
+        colors = _get_gradient_colors(colors, n)
         n = len(colors)
     if background is None:
         background = Image.new("RGB", size, 'black')
@@ -440,7 +391,8 @@ def perlin_wallpaper(
     Returns
     -------
     PIL.Image.Image
-        The generated wallpaper
+        The generated wallpaper as a PIL Image object. If `fname` is provided,
+        the image is also saved to the specified file path.
 
     Examples
     --------
@@ -461,7 +413,7 @@ def perlin_wallpaper(
     if _is_cmap(colors):
         if background is None:
             background = Image.new("RGB", size, get_bgcolor(colors))
-        colors = _get_stepwise_palette(colors, n)
+        colors = generate_stepwise_palette(colors, n)
     else:
         colors = _get_gradient_colors(colors)
         n = len(colors)
@@ -581,7 +533,8 @@ def perlin_lines(
     Returns
     -------
     PIL.Image.Image
-        The generated wallpaper
+        The generated wallpaper as a PIL Image object. If `fname` is provided,
+        the image is also saved to the specified file path.
 
     Examples
     --------
@@ -602,7 +555,7 @@ def perlin_lines(
     if _is_cmap(colors):
         if background is None:
             background = Image.new("RGB", size, get_bgcolor(colors))
-        colors = _get_stepwise_palette(colors, m)
+        colors = generate_stepwise_palette(colors, m)
     else:
         colors = _get_gradient_colors(colors)
         m = len(colors)
@@ -703,7 +656,8 @@ def gradient_wallpaper(
     Returns
     -------
     PIL.Image.Image
-        The generated wallpaper
+        The generated wallpaper as a PIL Image object. If `fname` is provided,
+        the image is also saved to the specified file path.
 
     Examples
     --------
@@ -818,7 +772,8 @@ def triangle_wallpaper(
     Returns
     -------
     PIL.Image.Image
-        The generated wallpaper
+        The generated wallpaper as a PIL Image object. If `fname` is provided,
+        the image is also saved to the specified file path.
     """
     if colors is None and img is None:
         raise ValueError("Either colors or img must be provided")
@@ -935,8 +890,8 @@ def triangle_wallpaper(
         # Assign random angle and color
         angle = np.random.uniform(0, 360)
         if colors is None:
-            #base_color = patch.get_average_color(img)
-            base_color = patch.get_centroid_color(img)
+            img_ = resize_image(img, size)
+            base_color = patch.get_centroid_color(img_)
         else:
             base_color = random.choice(colors)
             
