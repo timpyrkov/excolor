@@ -76,6 +76,7 @@ autodoc_mock_imports = [
     'seaborn',
     'skimage',
     'pythonperlin',
+    'excolor',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
