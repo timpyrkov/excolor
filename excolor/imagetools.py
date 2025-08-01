@@ -419,11 +419,13 @@ def _find_midpoint(data: np.ndarray) -> np.ndarray:
     Examples
     --------
     >>> # Find peaks in a bimodal distribution
-    >>> data = np.concatenate([np.random.normal(0.2, 0.1, 100),
-    ...                       np.random.normal(0.8, 0.1, 100)])
+    >>> rng = np.random.default_rng(0)
+    >>> data = np.concatenate([rng.normal(0.2, 0.1, 100),
+    ...                       rng.normal(0.8, 0.1, 100)])
     >>> peaks = find_peaks(data)
     >>> # Find peaks in a uniform distribution
-    >>> data = np.random.rand(200)
+    >>> rng = np.random.default_rng(0)
+    >>> data = rng.random(200)
     >>> peaks = find_peaks(data)  # Likely returns [0, 1]
     """
     values = np.clip(data.flatten(), 0, 1)

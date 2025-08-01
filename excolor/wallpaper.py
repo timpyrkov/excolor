@@ -170,8 +170,9 @@ def _distort_radius(x: np.ndarray, y: np.ndarray, p: np.ndarray) -> Tuple[np.nda
     --------
     >>> # Create points on a circle
     >>> x, y = get_circle_dots(r=1, n=100)
-    >>> # Add random noise to radius
-    >>> noise = np.random.normal(0, 0.1, 100)
+    >>> # Add random noise
+    >>> rng = np.random.default_rng(0)
+    >>> noise = rng.normal(0, 0.1, 100)
     >>> x_dist, y_dist = _distort_radius(x, y, noise)
     >>> # Add systematic distortion
     >>> distortion = np.sin(np.linspace(0, 2*np.pi, 100)) * 0.2
@@ -783,8 +784,8 @@ def triangle_wallpaper(
     if colors is not None and img is not None:
         raise ValueError("colors must not be provided when using img")
 
-    # Set random seed
-    np.random.seed(seed)
+    # Set seed for reproducibility
+    rng = np.random.default_rng(seed)
 
     # Convert single color to list of lighter and darker shades
     if colors is not None:
@@ -819,8 +820,8 @@ def triangle_wallpaper(
     # Apply random distortion to xs and ys
     max_distortion_x = total_width * distortion / grid_size[0]
     max_distortion_y = total_height * distortion / grid_size[1]
-    xs += np.random.uniform(-max_distortion_x, max_distortion_x, xs.shape)
-    ys += np.random.uniform(-max_distortion_y, max_distortion_y, ys.shape)
+    xs += rng.uniform(-max_distortion_x, max_distortion_x, xs.shape)
+    ys += rng.uniform(-max_distortion_y, max_distortion_y, ys.shape)
     
     # Calculate light direction vector (normalized)
     light_angle_rad = np.radians(0)
@@ -891,7 +892,7 @@ def triangle_wallpaper(
         patch = Patch(coords)
         
         # Assign random angle and color
-        angle = np.random.uniform(0, 360)
+        angle = rng.uniform(0, 360)
         if colors is None:
             img_ = resize_image(img, size)
             base_color = patch.get_centroid_color(img_)

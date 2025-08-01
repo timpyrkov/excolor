@@ -19,7 +19,7 @@ pip install excolor
 
 # Extra colormaps (gruvbox and more)
 
-New colormaps: BrBu, BrGn, OrBu, OrGn, PiBu, rtd, artdeco, cyberpunk, synthwave, gruvbox, cobalt, noctis, monokai, oceanic
+New colormaps: BrBu, BrGn, OrBu, OrGn, PiBu, rtd, artdeco, cyberpunk, synthwave, gruvbox, cobalt, noctis, monokai, oceanic.
 
 ```
 import excolor
@@ -207,7 +207,7 @@ plt.show()
 
 # Wallpaper
 
-Draw patches distorted by Perlin noise 
+Draw patches distorted by Perlin noise.
 
 ```
 img = excolor.perlin_wallpaper("gruvbox", n=5, size=(720, 480))
