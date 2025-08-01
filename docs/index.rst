@@ -60,7 +60,7 @@ Generate foreground colors palette from a seed color
    color = '#BBFF33'
 
    # Generate a palette for primary CSS colors
-   foreground_colors = excolor.generate_foreground_palette(color)
+   foreground_colors = excolor.generate_foreground_palette(color, mode='superellipse', power=3)
 
    # Show primary colors
    excolor.show_colors(foreground_colors)
