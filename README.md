@@ -173,6 +173,8 @@ print("Greyscaled image array shape:", np.asarray(greyscaled).shape)
 ![](https://github.com/timpyrkov/excolor/blob/master/img/arrow.png?raw=true)
 ![](https://github.com/timpyrkov/excolor/blob/master/img/target_greyscale.png?raw=true)
 
+`Source image array shape: (240, 320, 3)`<br>
+`Greyscaled image array shape: (240, 320, 3)`<br>
 
 # Low-polygonal
 
