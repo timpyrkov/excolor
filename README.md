@@ -37,14 +37,14 @@ Mode "superellipse" defines the path from black to white. Higher degree produces
 
 ```
 # Seed color
-color = '#458588'
+color = '#D65D0E'
 
-colors = excolor.generate_palette(color, mode='superellipse', power=3)
+colors = excolor.generate_palette(color, mode='superellipse', power=2)
 
 excolor.show_colors(colors)
 ```
 
-`['#FFFFFF', '#CFF4F6', '#A7DBDE', '#84C0C3', '#63A3A6', '#458588', '#296568', '#114547', '#002224', '#000000']`<br>
+`['#FFFFFF', '#FFEDCC', '#FFCE95', '#FFAA61', '#FD8435', '#D85F10', '#AA3C00', '#751D00', '#390600', '#000000']`<br>
 ![](https://github.com/timpyrkov/excolor/blob/master/img/palette.png?raw=true)
 
 ```
@@ -54,17 +54,17 @@ primary_colors = excolor.generate_primary_palette(color)
 excolor.show_colors(primary_colors)
 ```
 
-`/* Kumutoto color palette */`<br>
+`/* Pastel Orange color palette */`<br>
 `:root {`<br>
-`  --primary-color-1: #DBFFFF;`<br>
-`  --primary-color-2: #BBF0F3;`<br>
-`  --primary-color-3: #A0DCDF;`<br>
-`  --primary-color-4: #88C6C9;`<br>
-`  --primary-color-5: #70B0B3;`<br>
-`  --primary-color-6: #599A9C;`<br>
-`  --primary-color-7: #438386;`<br>
-`  --primary-color-8: #2D6C6F;`<br>
-`  --primary-color-9: #175558;`<br>
+`  --primary-color-1: #FFF8DD;`<br>
+`  --primary-color-2: #FFE8B4;`<br>
+`  --primary-color-3: #FFCF8B;`<br>
+`  --primary-color-4: #FFB266;`<br>
+`  --primary-color-5: #FF9547;`<br>
+`  --primary-color-6: #F2792A;`<br>
+`  --primary-color-7: #D55C0D;`<br>
+`  --primary-color-8: #B74000;`<br>
+`  --primary-color-9: #942500;`<br>
 `}`<br>
 ![](https://github.com/timpyrkov/excolor/blob/master/img/palette_primary.png?raw=true)
 
@@ -76,39 +76,39 @@ background_colors = excolor.generate_background_palette(color)
 excolor.show_colors(background_colors)
 ```
 
-`/* Cyprus color palette */`<br>
+`/* Reddy Brown color palette */`<br>
 `:root {`<br>
-`  --background-color-1: #2D6C6F;`<br>
-`  --background-color-2: #226063;`<br>
-`  --background-color-3: #175558;`<br>
-`  --background-color-4: #0D494C;`<br>
-`  --background-color-5: #043D3F;`<br>
-`  --background-color-6: #003033;`<br>
-`  --background-color-7: #002426;`<br>
-`  --background-color-8: #001618;`<br>
-`  --background-color-9: #00090A;`<br>
+`  --background-color-1: #B74000;`<br>
+`  --background-color-2: #A63200;`<br>
+`  --background-color-3: #942500;`<br>
+`  --background-color-4: #801800;`<br>
+`  --background-color-5: #6B0D00;`<br>
+`  --background-color-6: #540400;`<br>
+`  --background-color-7: #3D0000;`<br>
+`  --background-color-8: #270000;`<br>
+`  --background-color-9: #130000;`<br>
 `}`<br>
 ![](https://github.com/timpyrkov/excolor/blob/master/img/palette_background.png?raw=true)
 
 
 ```
-# Generate palette for primary CSS colors
+# Generate palette for foreground CSS colors
 foreground_colors = excolor.generate_foreground_palette(color)
 
 excolor.show_colors(foreground_colors)
 ```
 
-`/* Blizzard Blue color palette */`<br>
+`/* Circus color palette */`<br>
 `:root {`<br>
-`  --foreground-color-1: #EDFFFF;`<br>
-`  --foreground-color-2: #DBFFFF;`<br>
-`  --foreground-color-3: #CAFAFC;`<br>
-`  --foreground-color-4: #BBF0F3;`<br>
-`  --foreground-color-5: #ADE6E9;`<br>
-`  --foreground-color-6: #A0DCDF;`<br>
-`  --foreground-color-7: #94D1D4;`<br>
-`  --foreground-color-8: #88C6C9;`<br>
-`  --foreground-color-9: #7CBBBE;`<br>
+`  --foreground-color-1: #FFFCEF;`<br>
+`  --foreground-color-2: #FFF8DD;`<br>
+`  --foreground-color-3: #FFF2CA;`<br>
+`  --foreground-color-4: #FFE8B4;`<br>
+`  --foreground-color-5: #FFDC9F;`<br>
+`  --foreground-color-6: #FFCF8B;`<br>
+`  --foreground-color-7: #FFC078;`<br>
+`  --foreground-color-8: #FFB266;`<br>
+`  --foreground-color-9: #FFA456;`<br>
 `}`<br>
 ![](https://github.com/timpyrkov/excolor/blob/master/img/palette_foreground.png?raw=true)
 
@@ -126,9 +126,9 @@ plt.imshow(img)
 plt.axis("off")
 plt.show()
 
-# Colorize and show image
-green, blue = "#CAC94C", "#226063"
-img = excolor.colorize_image(url, green, blue)
+# Colorize image
+light, dark = "#FBF1C6", "#665C54"
+img = excolor.colorize_image(url, dark, light)
 
 # Show colorized image
 plt.figure(figsize=(6,6), facecolor="#00000000")
@@ -159,7 +159,7 @@ plt.show()
 # Convert to greyscale
 greyscaled = excolor.greyscale_image(url)
 
-# Show colorized image
+# Show greyscale image
 plt.figure(figsize=(6,6), facecolor="#00000000")
 plt.imshow(greyscaled)
 plt.axis("off")
@@ -181,7 +181,7 @@ print("Greyscaled image array shape:", np.asarray(greyscaled).shape)
 ```
 url = "https://github.com/timpyrkov/excolor/blob/master/img/image_gruvbox.png?raw=true"
 
-# Load image from url (image_color.png from github repository)
+# Load image from url (image_gruvbox.png from github repository)
 img = excolor.load_image(url)
 
 # Show source image
@@ -193,7 +193,7 @@ plt.show()
 # Convert to low-polygonal image
 img = excolor.triangle_wallpaper(img=img, density=30, distortion=0.4, size=(640,480))
 
-# Sjow low-polygonal image
+# Show low-polygonal image
 plt.figure(figsize=(6,6), facecolor="#00000000")
 plt.imshow(img)
 plt.axis("off")
